@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mina — Sistema AI · Full Minería Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg:        #0A0A0A;
+  --surface:   #111111;
+  --card:      #161616;
+  --border:    #242424;
+  --border2:   #1c1c1c;
+  --gold:      #D4A017;
+  --gold-l:    #E8B830;
+  --gold-dim:  rgba(212,160,23,0.12);
+  --text:      #E8E8E8;
+  --muted:     #888888;
+  --dim:       #444444;
+  --white:     #FFFFFF;
+  --green:     #2ECC71;
+  --blue:      #3B82F6;
+  --red:       #E74C3C;
+  --sidebar:   260px;
+}
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.topbar-left { display:flex; align-items:center; gap:12px; }
+.logo-box {
+  width:30px; height:30px;
+  background: var(--gold);
+  border-radius:6px;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:900; font-size:13pt; color:#000;
+}
+.topbar-brand { font-size:10pt; font-weight:700; color:var(--white); }
+.topbar-brand span { color:var(--gold); }
+.topbar-sep { color:var(--dim); font-size:9pt; margin:0 4px; }
+.topbar-sub { font-size:8.5pt; color:var(--muted); }
+.topbar-right { display:flex; align-items:center; gap:10px; }
+.demo-badge {
+  background: rgba(212,160,23,0.15);
+  border: 1px solid rgba(212,160,23,0.35);
+  color: var(--gold);
+  font-size: 7pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+.status-dot {
+  width:7px; height:7px;
+  border-radius:50%;
+  background:var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.status-label { font-size:8pt; color:var(--muted); }
+
+/* ── LAYOUT ── */
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.sidebar::-webkit-scrollbar { width:4px; }
+.sidebar::-webkit-scrollbar-track { background:transparent; }
+.sidebar::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+.sidebar-section { padding: 16px; border-bottom: 1px solid var(--border2); }
+.sidebar-label {
+  font-size: 7pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--dim);
+  margin-bottom: 10px;
+}
+
+/* Mode cards */
+.mode-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 13px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all .18s;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.mode-card:hover { border-color: #333; background: var(--card); }
+.mode-card.active {
+  border-color: var(--gold);
+  background: var(--gold-dim);
+}
+.mode-card.active.blue { border-color: var(--blue); background: rgba(59,130,246,.1); }
+.mode-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display:flex; align-items:center; justify-content:center;
+  font-size: 11pt;
+  flex-shrink: 0;
+  background: var(--border2);
+}
+.mode-card.active .mode-icon { background: rgba(212,160,23,.2); }
+.mode-card.active.blue .mode-icon { background: rgba(59,130,246,.2); }
+.mode-name { font-size: 9pt; font-weight: 700; color: var(--text); margin-bottom: 1px; }
+.mode-sub { font-size: 7.5pt; color: var(--muted); line-height: 1.3; }
+
+/* Scenario buttons */
+.scenario-btn {
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 9px 11px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  transition: all .15s;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.scenario-btn:hover { border-color: var(--gold); background: var(--gold-dim); }
+.sc-icon { font-size: 11pt; flex-shrink:0; margin-top:1px; }
+.sc-text { font-size: 8pt; color: var(--muted); line-height: 1.4; }
+
+
+.reset-btn {
+  width:100%;
+  background:transparent;
+  border:1px solid var(--border);
+  border-radius:7px;
+  padding:8px;
+  color:var(--muted);
+  font-size:8pt;
+  cursor:pointer;
+  transition: all .15s;
+  font-family:inherit;
+  margin-top:4px;
+}
+.reset-btn:hover { border-color:var(--dim); color:var(--text); }
+
+/* ── CHAT AREA ── */
+.chat-area {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.chat-header {
+  padding:14px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:var(--surface);
+  flex-shrink:0;
+}
+.chat-mode-name { font-size:10pt; font-weight:700; color:var(--white); }
+.chat-mode-sub { font-size:8pt; color:var(--muted); margin-top:1px; }
+.chat-header-right { display:flex; align-items:center; gap:8px; }
+
+/* Messages */
+.messages {
+  flex:1;
+  overflow-y:auto;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.messages::-webkit-scrollbar { width:4px; }
+.messages::-webkit-scrollbar-track { background:transparent; }
+.messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+.msg-row {
+  display:flex;
+  align-items:flex-end;
+  gap:10px;
+  max-width:88%;
+  animation: fadeUp .2s ease;
+}
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.msg-row.user { align-self:flex-end; flex-direction:row-reverse; }
+
+.avatar {
+  width:30px; height:30px;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11pt;
+  flex-shrink:0;
+  font-weight:700;
+}
+.avatar.mina {
+  background:var(--gold-dim);
+  border:1px solid rgba(212,160,23,.3);
+  color:var(--gold);
+  font-size:8pt;
+}
+.avatar.user {
+  background:rgba(255,255,255,.07);
+  border:1px solid var(--border);
+  color:var(--muted);
+  font-size:9pt;
+}
+
+.bubble {
+  border-radius:12px;
+  padding:11px 15px;
+  font-size:9.5pt;
+  line-height:1.65;
+  max-width:100%;
+}
+.bubble.mina {
+  background:var(--card);
+  border:1px solid var(--border2);
+  border-bottom-left-radius:4px;
+  color:var(--text);
+}
+.bubble.user {
+  background:rgba(212,160,23,.12);
+  border:1px solid rgba(212,160,23,.2);
+  border-bottom-right-radius:4px;
+  color:var(--white);
+}
+.bubble strong { color:var(--white); font-weight:600; }
+.bubble ul { padding-left:16px; margin:6px 0; }
+.bubble li { margin-bottom:3px; color:var(--muted); font-size:9pt; }
+.bubble li strong { color:var(--text); }
+.bubble h3 { font-size:10pt; color:var(--white); margin:10px 0 4px; }
+.bubble h4 { font-size:9pt; color:var(--gold); margin:8px 0 4px; text-transform:uppercase; letter-spacing:.5px; }
+.bubble p { margin-bottom:6px; }
+.bubble p:last-child { margin-bottom:0; }
+.bubble .warn {
+  background:rgba(231,76,60,.1);
+  border:1px solid rgba(231,76,60,.25);
+  border-radius:6px;
+  padding:8px 11px;
+  margin-top:8px;
+  font-size:9pt;
+  color:#e8847d;
+}
+.bubble table { width:100%; border-collapse:collapse; margin:8px 0; font-size:8.5pt; }
+.bubble th { color:var(--gold); text-align:left; padding:5px 8px; border-bottom:1px solid var(--border); font-weight:600; font-size:7.5pt; text-transform:uppercase; letter-spacing:.5px; }
+.bubble td { padding:5px 8px; border-bottom:1px solid var(--border2); color:var(--muted); }
+.bubble td strong { color:var(--text); }
+.bubble tr:last-child td { border-bottom:none; }
+
+.msg-time { font-size:7pt; color:var(--dim); margin-top:3px; padding:0 4px; }
+
+/* Typing indicator */
+.typing-row { display:flex; align-items:flex-end; gap:10px; }
+.typing-bubble {
+  background:var(--card);
+  border:1px solid var(--border2);
+  border-radius:12px;
+  border-bottom-left-radius:4px;
+  padding:12px 16px;
+  display:flex;
+  gap:4px;
+  align-items:center;
+}
+.dot {
+  width:6px; height:6px;
+  border-radius:50%;
+  background:var(--muted);
+  animation:bounce .8s infinite;
+}
+.dot:nth-child(2){animation-delay:.15s}
+.dot:nth-child(3){animation-delay:.3s}
+@keyframes bounce {
+  0%,80%,100% { transform:translateY(0); opacity:.5; }
+  40% { transform:translateY(-5px); opacity:1; }
+}
+
+/* Input area */
+.input-area {
+  border-top:1px solid var(--border);
+  padding:14px 20px;
+  background:var(--surface);
+  flex-shrink:0;
+}
+.input-row { display:flex; align-items:flex-end; gap:10px; }
+textarea#msg-input {
+  flex:1;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:11px 14px;
+  color:var(--text);
+  font-family:inherit;
+  font-size:9.5pt;
+  resize:none;
+  min-height:42px;
+  max-height:120px;
+  outline:none;
+  transition: border-color .15s;
+  line-height:1.5;
+}
+textarea#msg-input:focus { border-color: rgba(212,160,23,.4); }
+textarea#msg-input::placeholder { color:var(--dim); }
+.send-btn {
+  width:40px; height:40px;
+  background:var(--gold);
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  transition: background .15s, transform .1s;
+  color:#000;
+  font-size:14pt;
+}
+.send-btn:hover { background:var(--gold-l); }
+.send-btn:active { transform:scale(.95); }
+.send-btn:disabled { background:var(--border); cursor:not-allowed; color:var(--dim); }
+.input-hint { font-size:7.5pt; color:var(--dim); margin-top:7px; }
+
+/* ── WELCOME CARD ── */
+.welcome-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:24px;
+  text-align:center;
+  margin:auto;
+  max-width:340px;
+}
+.welcome-avatar {
+  width:56px; height:56px;
+  border-radius:50%;
+  background:var(--gold-dim);
+  border:2px solid rgba(212,160,23,.3);
+  display:flex; align-items:center; justify-content:center;
+  font-size:22pt;
+  margin:0 auto 14px;
+}
+.welcome-name { font-size:14pt; font-weight:800; color:var(--white); margin-bottom:4px; }
+.welcome-sub { font-size:9pt; color:var(--muted); line-height:1.5; margin-bottom:16px; }
+.welcome-features { text-align:left; }
+.wf-item { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+.wf-dot { width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0; }
+.wf-text { font-size:8.5pt; color:var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo-box">FM</div>
+    <span class="topbar-brand">Full<span>Minería</span></span>
+    <span class="topbar-sep">·</span>
+    <span class="topbar-sub">Sistema de Asistencia Virtual — Mina</span>
+  </div>
+  <div class="topbar-right">
+    <div class="status-dot"></div>
+    <span class="status-label">Sistema activo</span>
+    <div class="demo-badge">Demo v1.0</div>
+  </div>
+</header>
+
+<!-- ── LAYOUT ── -->
+<div class="layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+
+    <!-- Modes -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Modo de asistente</div>
+
+      <div class="mode-card active" id="mode-general" onclick="setMode('general')">
+        <div class="mode-icon">◆</div>
+        <div>
+          <div class="mode-name">Asistente General</div>
+          <div class="mode-sub">Consultas, productos y contacto</div>
+        </div>
+      </div>
+
+      <div class="mode-card" id="mode-ventas" onclick="setMode('ventas')">
+        <div class="mode-icon">◈</div>
+        <div>
+          <div class="mode-name">Ventas y Cotización</div>
+          <div class="mode-sub">Calificación y cierre de pedidos</div>
+        </div>
+      </div>
+
+      <div class="mode-card" id="mode-soporte" onclick="setMode('soporte')">
+        <div class="mode-icon">◉</div>
+        <div>
+          <div class="mode-name">Soporte Técnico</div>
+          <div class="mode-sub">Pedidos, reclamaciones y postventa</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scenarios -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Escenarios demo</div>
+      <div id="scenarios-container"></div>
+    </div>
+
+    <!-- Reset -->
+    <div class="sidebar-section">
+      <button class="reset-btn" onclick="resetChat()">↺ Reiniciar conversación</button>
+    </div>
+
+    <!-- Info -->
+    <div class="sidebar-section" style="margin-top:auto">
+      <div style="font-size:7pt;color:var(--dim);line-height:1.6;">
+        Demo interactiva para Full Minería.<br>
+        La implementación real conecta con IA en tiempo real vía API.
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── CHAT ── -->
+  <main class="chat-area">
+
+    <!-- Chat header -->
+    <div class="chat-header">
+      <div>
+        <div class="chat-mode-name" id="chat-mode-name">Asistente General</div>
+        <div class="chat-mode-sub" id="chat-mode-sub">Consultas generales, productos y contacto</div>
+      </div>
+      <div class="chat-header-right" id="header-tags"></div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages" id="messages">
+      <!-- Welcome card injected by JS -->
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-row">
+        <textarea id="msg-input" placeholder="Escriba su consulta aquí..." rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+      <div class="input-hint">Presione Enter para enviar · Shift+Enter para nueva línea</div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// MODES CONFIG
+// ═══════════════════════════════════════════════════
+const MODES = {
+  general: {
+    name: 'Asistente General',
+    sub: 'Consultas generales, productos y contacto',
+    prompts: ['PROMPT_01', 'PROMPT_04'],
+    promptClass: '',
+    cardId: 'mode-general',
+    welcome: `Hola, soy <strong>Mina</strong>, la asistente virtual de <strong>Full Minería</strong>.<br><br>Estoy aquí para ayudarle con productos de seguridad industrial, EPP, cotizaciones y normativa colombiana.<br><br>¿En qué <strong>sector o actividad económica</strong> trabaja su empresa? Así le recomiendo exactamente lo que necesita.`,
+    scenarios: [
+      { icon: '⛰', text: '¿Qué tienen para trabajo en alturas?' },
+      { icon: '⛏', text: 'Necesito EPP para minería subterránea' },
+      { icon: '📞', text: '¿Cómo los contacto y cuál es el horario?' },
+      { icon: '📋', text: '¿Qué normas debo cumplir en construcción?' },
+    ]
+  },
+  ventas: {
+    name: 'Ventas y Cotización',
+    sub: 'Calificación de cliente, recomendación y cierre',
+    prompts: ['PROMPT_01', 'PROMPT_02', 'PROMPT_04'],
+    promptClass: '',
+    cardId: 'mode-ventas',
+    welcome: `Hola, soy <strong>Mina</strong> de Full Minería.<br><br>Estoy lista para ayudarle con su cotización. Cuénteme qué producto o equipo necesita y en qué cantidad — le respondo de inmediato.`,
+    scenarios: [
+      { icon: '📋', text: 'Quiero cotizar 20 arneses para mi empresa' },
+      { icon: '💰', text: '¿Qué precio tienen los cascos Steelpro?' },
+      { icon: '💬', text: 'Está muy caro, lo consigo más barato' },
+      { icon: '⚡', text: 'Necesito dotación para 50 empleados urgente' },
+    ]
+  },
+  soporte: {
+    name: 'Soporte Técnico',
+    sub: 'Seguimiento de pedidos, reclamaciones y postventa',
+    prompts: ['PROMPT_01', 'PROMPT_03', 'PROMPT_04'],
+    promptClass: 'blue',
+    cardId: 'mode-soporte',
+    welcome: `Hola, soy <strong>Mina</strong>, soporte de <strong>Full Minería</strong>.<br><br>Puedo ayudarle con el seguimiento de su pedido, reclamaciones, garantías, dudas sobre productos y conocer nuestras novedades.<br><br>¿En qué le puedo ayudar hoy?`,
+    scenarios: [
+      { icon: '📦', text: '¿En qué estado está mi pedido?' },
+      { icon: '⚠️', text: 'Tengo un problema con un producto recibido' },
+      { icon: '✨', text: '¿Qué productos nuevos tienen disponibles?' },
+      { icon: '💬', text: 'Tengo una duda sobre mi última compra' },
+    ]
+  }
+};
+
+// ═══════════════════════════════════════════════════
+// RESPONSE DATABASE
+// ═══════════════════════════════════════════════════
+const RESPONSES = {
+  general: [
+    {
+      kw: ['hola','buenos días','buenas tardes','buenas noches','hey','saludos','buen día','buenas'],
+      html: `<p>Hola. Soy <strong>Mina</strong>, la asistente virtual de <strong>Full Minería</strong>.</p><p>Tenemos equipos de seguridad industrial, EPP y herramientas para minería y construcción. ¿En qué sector trabaja su empresa? Así le recomiendo exactamente lo que necesita.</p>`
+    },
+    {
+      kw: ['alturas','arnés','arnes','línea de vida','linea de vida','mosqueton','retráctil','retractil','anticaída','anticaida'],
+      html: `<p>Para <strong>trabajo en alturas</strong> manejamos línea completa bajo la <strong>Resolución 1409 de 2012</strong>:</p>
+<ul>
+<li><strong>Arneses de cuerpo completo</strong> — Steelpro, FM y EPP Colombia · ANSI Z359 / EN 361</li>
+<li><strong>Eslingas con absorbedor de impacto</strong> — simples y tipo Y</li>
+<li><strong>Sistemas autorretráctiles</strong> — cable de acero y cuerda, 3–30 m</li>
+<li><strong>Mosquetones y conectores</strong> — aluminio y acero con y sin seguro giratorio</li>
+<li><strong>Kits completos de alturas</strong> — por trabajador o por proyecto</li>
+<li><strong>Anclajes portátiles</strong> — para concreto y estructuras metálicas</li>
+</ul>
+<p>¿Para qué tipo de trabajo los necesita? ¿Construcción, mantenimiento, fachadas o minería?</p>`
+    },
+    {
+      kw: ['casco','cabeza','helm'],
+      html: `<p>En <strong>cascos de seguridad</strong> tenemos:</p>
+<ul>
+<li><strong>Tipo I y II</strong> — Clases E (eléctrico), G (general) y C (conductor)</li>
+<li><strong>Cascos dieléctricos</strong> — para media y alta tensión</li>
+<li><strong>Cascos para alturas</strong> — barboquejo de 4 puntos incluido</li>
+<li><strong>Cascos ventilados</strong> — para ambientes calurosos</li>
+</ul>
+<p><strong>Marcas:</strong> Steelpro · EPP Colombia · FM (marca propia)</p>
+<p>¿Hay riesgo eléctrico o trabajo en alturas? Eso define la clase que necesita.</p>`
+    },
+    {
+      kw: ['minería','mineria','mina','subterránea','subterranea','socavón','socavon','perforadora','lámpara','lampara'],
+      html: `<p>Para el <strong>sector minero</strong> tenemos portafolio especializado:</p>
+<h4>Equipos de trabajo</h4>
+<ul>
+<li><strong>Perforadoras YT</strong> neumáticas — subterráneas y cielo abierto</li>
+<li><strong>Martillos perforadores</strong> eléctricos y neumáticos</li>
+<li><strong>Aceros para minería</strong> — barras, brocas y bits</li>
+<li><strong>Lámparas mineras</strong> certificadas para labores subterráneas</li>
+</ul>
+<h4>EPP para minería</h4>
+<ul>
+<li><strong>Respiradores FFP3</strong> — obligatorio para polvo de sílice</li>
+<li><strong>Detectores de gas</strong> portátiles — CO, CH₄, H₂S, O₂</li>
+<li><strong>Arneses y sistemas de rescate</strong> para pozos y socavones</li>
+<li><strong>Botas de seguridad</strong> puntera de acero para minería</li>
+</ul>
+<p>¿Es minería subterránea o a cielo abierto? ¿Cuántos trabajadores necesitan equipar?</p>`
+    },
+    {
+      kw: ['respirador','mascarilla','n95','ffp','polvo de','respiratorio','filtro'],
+      html: `<p>En <strong>protección respiratoria</strong> tenemos toda la gama:</p>
+<ul>
+<li><strong>Mascarillas desechables</strong> — N95 (NIOSH) y FFP2/FFP3 (EN 149)</li>
+<li><strong>Respiradores media cara</strong> — marcas 3M y Moldex, filtros intercambiables</li>
+<li><strong>Respiradores cara completa</strong> — para atmósferas peligrosas</li>
+<li><strong>Filtros disponibles:</strong> P3 (partículas), A (vapores orgánicos), B (gases ácidos), combinados A2B2P3</li>
+</ul>
+<p>La selección depende del contaminante. ¿Hay polvo, gases o ambos? ¿Cuántas horas de exposición al día? Con eso le doy la recomendación exacta con la certificación correspondiente.</p>`
+    },
+    {
+      kw: ['dotación','dotacion','overol','uniforme','chaqueta','chaleco','camisa','ropa de trabajo'],
+      html: `<p>En <strong>dotaciones industriales</strong> tenemos:</p>
+<ul>
+<li><strong>Overoles</strong> — algodón 100%, polyalgodón (65/35) e ignífugo</li>
+<li><strong>Chaquetas industriales</strong> — tela drill y plana, con y sin forro</li>
+<li><strong>Chalecos de alta visibilidad</strong> — ISO 20471 Clase 2 y Clase 3</li>
+<li><strong>Camisas tipo polo y drill</strong> — para dotación corporativa</li>
+<li><strong>Pantalones industriales</strong> — drill y denim reforzado</li>
+</ul>
+<p><strong>Proveedor aliado:</strong> 3025 S.A — especialistas en uniformes industriales.</p>
+<p>¿Cuántas personas necesita dotar y qué actividad realizan?</p>`
+    },
+    {
+      kw: ['contacto','teléfono','telefono','whatsapp','dirección','direccion','sede','horario','email','correo','redes'],
+      html: `<p>Datos de contacto de <strong>Full Minería</strong>:</p>
+<table>
+<tr><th>Canal</th><th>Dato</th></tr>
+<tr><td>📱 WhatsApp</td><td><strong>311 243 6563</strong> · 310 344 4648</td></tr>
+<tr><td>📧 Email</td><td>mercadeo@fullmineria.com</td></tr>
+<tr><td>🌐 Web</td><td>fullmineria.com</td></tr>
+<tr><td>📍 Sede</td><td>Calle 19 Nro. 21-61, Bogotá</td></tr>
+<tr><td>⏰ Horario</td><td>Lun–Vie 8:00–17:30 · Sáb 8:30–13:00</td></tr>
+<tr><td>📲 Redes</td><td>@fullmineria (Instagram · TikTok · Facebook)</td></tr>
+</table>
+<p>¿Necesita que le contacte un asesor directamente?</p>`
+    },
+    {
+      kw: ['cotiz','precio','valor','cuánto cuesta','cuanto cuesta','comprar','pedir','quiero'],
+      html: `<p>Con mucho gusto le ayudo con la cotización. Para armarla necesito:</p>
+<ul>
+<li><strong>¿Qué producto(s) necesita?</strong> (puede describir el uso si no sabe la referencia)</li>
+<li><strong>¿Cuántas unidades?</strong></li>
+<li><strong>¿Ciudad de entrega?</strong></li>
+<li><strong>¿Nombre de empresa y NIT?</strong></li>
+</ul>
+<p>Con eso le respondo en minutos con precios, referencias y plazo de entrega.</p>`
+    },
+    {
+      kw: ['norma','resolución','resolucion','decreto','legal','cumplimiento','icontec','certificación','certificacion'],
+      html: `<p>Las normas principales en Colombia para seguridad industrial son:</p>
+<ul>
+<li><strong>Resolución 1409/2012</strong> — Trabajo en alturas (+1,50 m). Exige arnés + eslinga + anclaje certificado y capacitación del trabajador.</li>
+<li><strong>Decreto 1072/2015</strong> — SG-SST. Toda empresa debe tener matriz de riesgos y entrega documentada de EPP.</li>
+<li><strong>Resolución 0312/2019</strong> — Estándares mínimos del SG-SST por tamaño de empresa.</li>
+<li><strong>Normas ICONTEC:</strong> NTC 1820 (cascos), NTC 2229 (calzado), NTC 1589 (guantes).</li>
+</ul>
+<p>¿Hay una norma específica que necesite cumplir? Le oriiento sobre el EPP que corresponde.</p>`
+    },
+    {
+      kw: ['emergencia','accidente','lesión','lesion','herido','peligro'],
+      html: `<div class="warn">⚠️ <strong>Si hay una emergencia activa</strong>, llame de inmediato al <strong>123</strong> (emergencias Colombia) o al número de emergencias de su empresa.<br><br>No espere respuesta de este canal en situaciones de riesgo inminente.</div>
+<p>Cuando la situación esté controlada, con gusto le ayudo con el reporte del incidente, revisión del EPP involucrado y protocolos de seguimiento.</p>`
+    },
+    {
+      kw: ['guantes','manos','anticorte','dieléctrico','dielectrico'],
+      html: `<p>En <strong>protección de manos</strong> manejamos:</p>
+<ul>
+<li><strong>Guantes de vaqueta/carnaza</strong> — trabajo pesado general</li>
+<li><strong>Guantes anticorte</strong> — niveles A4–A9, norma EN 388 / ANSI 105</li>
+<li><strong>Guantes dieléctricos</strong> — clases 00 al 4 según voltaje (EN 60903)</li>
+<li><strong>Guantes de nitrilo</strong> — manejo de químicos y solventes</li>
+<li><strong>Guantes de soldador</strong> — manga larga, EN 12477</li>
+<li><strong>Guantes criogénicos</strong> — para temperaturas extremas</li>
+</ul>
+<p>¿Cuál es el riesgo específico? Con eso le recomiendo el nivel de protección correcto.</p>`
+    },
+    {
+      kw: ['botiquín','botiquin','primeros auxilios','extintor','camilla'],
+      html: `<p>En <strong>primeros auxilios y emergencias</strong> tenemos:</p>
+<ul>
+<li><strong>Botiquines empresariales</strong> — dotación básica, avanzada y para obra</li>
+<li><strong>Extintores</strong> — polvo, CO₂, agua y espuma · venta y recarga</li>
+<li><strong>Camillas de evacuación</strong> — rígidas y de rescate plegables</li>
+<li><strong>Kits de derrame</strong> — para emergencias con químicos</li>
+</ul>
+<p>¿Cuántas personas tiene su empresa y en qué sector opera? Con eso le digo qué dotación le corresponde por norma.</p>`
+    },
+  ],
+
+  ventas: [
+    {
+      kw: ['arnés','arnes','alturas','linea de vida','kit de altura'],
+      html: `<p>En equipos para <strong>trabajo en alturas</strong> tenemos opciones para todos los presupuestos:</p>
+<table>
+<tr><th>Producto</th><th>Referencia</th><th>Precio unit.</th></tr>
+<tr><td>Arnés cuerpo completo FM Pro</td><td>FM-AT100</td><td>Desde $145.000 + IVA</td></tr>
+<tr><td>Arnés Steelpro AT-100</td><td>ST-AT100</td><td>Desde $185.000 + IVA</td></tr>
+<tr><td>Arnés Steelpro AT-200 (dorsal+lat.)</td><td>ST-AT200</td><td>Desde $240.000 + IVA</td></tr>
+<tr><td><strong>Kit completo FM</strong> (arnés+eslinga+mosq.)</td><td>FM-KIT01</td><td>Desde $320.000 + IVA</td></tr>
+<tr><td><strong>Kit Premium Steelpro</strong></td><td>ST-KIT01</td><td>Desde $480.000 + IVA</td></tr>
+</table>
+<p style="font-size:8pt;color:var(--muted);">*Precios de referencia sujetos a IVA y verificación de stock. Se confirman al cotizar formalmente.</p>
+<p>¿Cuántas personas necesita equipar? Si es un volumen mayor a 10 unidades, reviso condición especial.</p>`
+    },
+    {
+      kw: ['casco','cascos','helmet'],
+      html: `<p>Opciones de <strong>cascos de seguridad</strong>:</p>
+<table>
+<tr><th>Producto</th><th>Clase</th><th>Precio unit.</th></tr>
+<tr><td>Casco FM Industrial (marca propia)</td><td>Tipo I · Clase G</td><td>$22.000 + IVA</td></tr>
+<tr><td>Casco Steelpro Basic</td><td>Tipo I · Clase E</td><td>$28.500 + IVA</td></tr>
+<tr><td>Casco Dieléctrico EPP Colombia</td><td>Tipo I · Clase E</td><td>$38.000 + IVA</td></tr>
+<tr><td>Casco Alturas Steelpro (barboquejo)</td><td>Tipo II · Clase E</td><td>$45.000 + IVA</td></tr>
+</table>
+<p>Si son <strong>más de 20 unidades</strong>, puedo revisar condición de volumen. ¿Cuántos necesita y para qué actividad?</p>`
+    },
+    {
+      kw: ['caro','costoso','muy caro','precio alto','es caro'],
+      html: `<p>Entiendo. ¿Con qué lo está comparando? Si me comparte la referencia y el precio que encontró, verifico si estamos hablando del mismo nivel de certificación.</p>
+<p>En EPP esto importa mucho: dos arneses pueden verse idénticos, pero uno cumple la <strong>Resolución 1409</strong> y el otro no. Si falla en una inspección del Ministerio de Trabajo, la multa puede ser de <strong>hasta 500 SMMLV</strong> — eso es mucho más que la diferencia de precio.</p>
+<p>¿Qué referencia específica está comparando?</p>`
+    },
+    {
+      kw: ['barato','más barato','mas barato','descuento','competencia','rebaja','mejor precio','consigo'],
+      html: `<p>Es válido comparar. Lo que le ofrecemos con Full Minería:</p>
+<ul>
+<li><strong>Producto certificado</strong> — verificado bajo norma colombiana</li>
+<li><strong>Garantía de marca</strong> — respaldo directo con el fabricante</li>
+<li><strong>Soporte técnico</strong> — si hay un problema, le atendemos</li>
+<li><strong>Historial de compra documentado</strong> — válido en auditorías del SG-SST</li>
+</ul>
+<p>Si me comparte la referencia que encontró la revisamos juntos. A veces la diferencia está en la certificación, no en el producto.</p>
+<p>¿Qué referencia específica está evaluando?</p>`
+    },
+    {
+      kw: ['urgente','rápido','rapido','ya','hoy','inmediato','para hoy','para mañana'],
+      html: `<p>Entendido, es urgente. ¿Qué producto necesita y en qué cantidad?</p>
+<p>Si hay disponibilidad en bodega Bogotá, coordinamos despacho el <strong>mismo día o siguiente hábil</strong>. Para ciudades principales, entrega en <strong>24–48 horas</strong> con mensajería expresa.</p>
+<p>Confírmeme el producto y la cantidad — verifico stock ahora.</p>`
+    },
+    {
+      kw: ['50','cien','100','doscien','200','masivo','todos los empleados','empresa entera','personal completo'],
+      html: `<p>Un pedido de ese volumen tiene condiciones especiales. Para estructurar bien la propuesta necesito:</p>
+<ul>
+<li><strong>¿Qué productos?</strong> (pueden ser varios: cascos, arneses, dotación, botas...)</li>
+<li><strong>¿Ciudad(es) de entrega?</strong></li>
+<li><strong>¿Tiene presupuesto estimado por persona?</strong></li>
+<li><strong>¿Nombre de empresa y NIT?</strong></li>
+</ul>
+<p>Con eso el asesor comercial le prepara propuesta completa con precios por volumen. ¿Le parece si le paso el resumen al equipo?</p>`
+    },
+    {
+      kw: ['cotiz','presupuesto','propuesta','necesito','quiero','comprar'],
+      html: `<p>Con gusto. Para armar la cotización formal necesito:</p>
+<ul>
+<li><strong>¿Qué producto(s)?</strong> (referencia o descripción del uso)</li>
+<li><strong>¿Cuántas unidades?</strong></li>
+<li><strong>¿Ciudad de entrega?</strong></li>
+<li><strong>¿Nombre de empresa y NIT?</strong></li>
+<li><strong>¿Fecha en que lo necesita?</strong></li>
+</ul>
+<p>O si prefiere, escríbanos directo al WhatsApp <strong>311 243 6563</strong> y el equipo le responde de inmediato.</p>`
+    },
+    {
+      kw: ['dotación','dotacion','overol','uniforme','ropa'],
+      html: `<p>Para <strong>dotación empresarial</strong> le podemos cotizar paquete completo. Cuénteme:</p>
+<ul>
+<li>¿Cuántas personas?</li>
+<li>¿Qué tipo de trabajo realizan?</li>
+<li>¿Necesita logo bordado o estampado?</li>
+<li>¿Ciudad de entrega?</li>
+</ul>
+<p>Tenemos overoles desde <strong>$45.000 + IVA</strong> y chalecos de alta visibilidad desde <strong>$28.000 + IVA</strong>. Precios por volumen a partir de 20 unidades.</p>`
+    },
+  ],
+
+  soporte: [
+    {
+      kw: ['pedido','estado de mi pedido','seguimiento','dónde está','donde esta','mi pedido','rastreo','rastrear','envío','envio','despacho','cuándo llega','cuando llega','no ha llegado'],
+      html: `<p>Con mucho gusto le ayudo a verificar el estado de su pedido.</p>
+<p>Para consultarlo necesito uno de estos datos:</p>
+<ul>
+<li><strong>Número de orden de compra o factura</strong></li>
+<li><strong>Nombre de la empresa</strong> con la que realizó el pedido</li>
+<li><strong>Fecha aproximada</strong> en que confirmó el pedido</li>
+</ul>
+<p>Con eso verifico el estado en el sistema y le confirmo si está en preparación, en tránsito o pendiente de algún trámite.</p>
+<p>Si prefiere hablar directamente con el equipo de despachos, puede escribir al WhatsApp <strong>311 243 6563</strong> o a <strong>mercadeo@fullmineria.com</strong>.</p>`
+    },
+    {
+      kw: ['problema','producto recibido','llegó mal','llego mal','llegó dañado','llego dañado','incompleto','no funciona','defectuoso','no es lo que pedí','no es lo que pedi','equivocado','error en el pedido'],
+      html: `<p>Lamento que haya tenido ese inconveniente. Vamos a resolverlo cuanto antes.</p>
+<p>Para gestionar el caso necesito:</p>
+<ul>
+<li><strong>¿Cuál es el problema?</strong> (producto dañado, incorrecto, incompleto, defecto de fábrica)</li>
+<li><strong>Número de factura o pedido</strong></li>
+<li><strong>Fotos del producto</strong> si tiene — ayudan a agilizar el proceso</li>
+</ul>
+<p>Dependiendo del caso, coordinamos:</p>
+<ul>
+<li><strong>Cambio inmediato</strong> si fue un error de despacho</li>
+<li><strong>Revisión de garantía</strong> si es un defecto de fabricación</li>
+<li><strong>Reposición urgente</strong> si el producto es crítico para la operación</li>
+</ul>
+<p>Cuénteme qué pasó y lo gestionamos sin demora.</p>`
+    },
+    {
+      kw: ['nuevos productos','novedades','qué hay nuevo','que hay nuevo','nuevas referencias','lanzamiento','nuevo catálogo','nuevo catalogo','últimas novedades','ultimas novedades','qué tienen nuevo','que tienen nuevo'],
+      html: `<p>¡Excelente pregunta! En Full Minería estamos actualizando constantemente el portafolio. Estas son algunas de las <strong>novedades recientes</strong>:</p>
+<h4>Nuevas incorporaciones</h4>
+<ul>
+<li><strong>Arneses Steelpro Serie Pro 2025</strong> — diseño ergonómico mejorado, puntos de conexión frontales y dorsales · Certificación ANSI Z359</li>
+<li><strong>Detectores de gas multigas compactos</strong> — pantalla color, alertas vibración y sonido, conectividad Bluetooth · Ideal para espacios confinados</li>
+<li><strong>Línea de ropa ignífuga FM</strong> — overoles y chaquetas certificados para trabajos con riesgo de arco eléctrico y llama</li>
+<li><strong>Kits de primeros auxilios industriales actualizados</strong> — dotación conforme a Res. 0705 de 2007 · 3 tamaños disponibles</li>
+<li><strong>Señalización fotoluminiscente</strong> — señales de evacuación y rutas de emergencia de alta visibilidad</li>
+</ul>
+<p>¿Hay alguna categoría específica que le interese? Le comparto más detalles o coordino con un asesor para una presentación del portafolio.</p>`
+    },
+    {
+      kw: ['duda','inquietud','pregunta','consulta','información sobre','informacion sobre','me puede ayudar','necesito saber','tengo una duda','tengo una pregunta'],
+      html: `<p>Con gusto le atiendo. Cuénteme su duda o inquietud y le respondo de la manera más clara posible.</p>
+<p>En soporte de Full Minería puedo ayudarle con:</p>
+<ul>
+<li><strong>Seguimiento de pedidos y despachos</strong></li>
+<li><strong>Reclamaciones y cambios de producto</strong></li>
+<li><strong>Garantías y vida útil del EPP</strong></li>
+<li><strong>Dudas técnicas sobre productos</strong></li>
+<li><strong>Novedades y nuevas referencias</strong></li>
+<li><strong>Facturación y documentos de compra</strong></li>
+</ul>
+<p>¿Sobre cuál de estos temas tiene su consulta?</p>`
+    },
+    {
+      kw: ['factura','certificado','documento','soporte de compra','comprobante','remisión','remision'],
+      html: `<p>Para solicitar documentos relacionados con su compra (factura, remisión, certificado de producto, ficha técnica), por favor indíqueme:</p>
+<ul>
+<li><strong>¿Qué documento necesita?</strong></li>
+<li><strong>Número de factura o fecha de compra</strong></li>
+<li><strong>Nombre de la empresa</strong></li>
+<li><strong>Correo donde lo enviamos</strong></li>
+</ul>
+<p>Si lo necesita urgente, puede escribir directamente a <strong>mercadeo@fullmineria.com</strong> o al WhatsApp <strong>311 243 6563</strong> con los mismos datos.</p>`
+    },
+    {
+      kw: ['1409','resolución 1409','resolucion 1409','norma alturas','norma de alturas','qué exige','que exige','exige la norma'],
+      html: `<p>La <strong>Resolución 1409 de 2012</strong> es el reglamento obligatorio para todo trabajo en alturas en Colombia (más de <strong>1,50 metros</strong> sobre nivel inferior).</p>
+<h4>Equipo mínimo obligatorio</h4>
+<ul>
+<li><strong>Arnés de cuerpo completo</strong> — certificado ANSI Z359.1 o EN 361</li>
+<li><strong>Eslinga con absorbedor de impacto</strong> — NO se acepta cuerda de amarre sin absorbedor</li>
+<li><strong>Punto de anclaje certificado</strong> — resistencia mínima <strong>22,2 kN (5.000 lb)</strong></li>
+<li><strong>Casco con barboquejo</strong> de 4 puntos</li>
+</ul>
+<h4>Capacitación obligatoria</h4>
+<ul>
+<li><strong>Trabajador Autorizado:</strong> alturas hasta 5 m, tareas específicas — certificado por entidad SENA</li>
+<li><strong>Trabajador Calificado:</strong> alturas mayores, sistemas complejos</li>
+</ul>
+<p><strong>Responsabilidad:</strong> El empleador responde por el sistema completo, la capacitación y la supervisión.</p>
+<p>¿Necesita orientación sobre algún tipo específico de trabajo en alturas?</p>`
+    },
+    {
+      kw: ['reemplazar','reemplazo','vida útil','vida util','vencido','cuándo cambiar','cuando cambiar','caducado','cuando se cambia'],
+      html: `<p>Criterios de <strong>reemplazo de EPP</strong> por tipo de equipo:</p>
+<h4>Arneses y eslingas</h4>
+<div class="warn">⚠️ Reemplazo <strong>inmediato y obligatorio</strong> después de cualquier caída que haya generado carga — aunque no haya daño visible. Las fibras internas se dañan sin que se note por fuera.</div>
+<ul>
+<li>Vida útil máxima: <strong>5–10 años</strong> desde fabricación (verificar etiqueta del fabricante)</li>
+<li>Inspección diaria por el usuario: costuras, hebillas, estado del tejido</li>
+</ul>
+<h4>Cascos</h4>
+<ul>
+<li>Después de cualquier impacto fuerte (aunque no haya grieta visible)</li>
+<li>Cuando hay decoloración, grietas o exposición química</li>
+<li>Máximo <strong>5 años</strong> desde fabricación · <strong>3 años</strong> desde inicio de uso</li>
+</ul>
+<h4>Mascarillas desechables (N95/FFP)</h4>
+<ul>
+<li>Máximo <strong>8 horas</strong> de uso o antes si está húmeda o deteriorada</li>
+<li>No se lavan ni reutilizan si están dañadas</li>
+</ul>
+<h4>Detectores de gas</h4>
+<ul>
+<li><strong>Bump test:</strong> antes de cada turno</li>
+<li><strong>Calibración certificada:</strong> cada 6 meses mínimo</li>
+</ul>
+<p>¿Hay algún equipo específico sobre el que tenga dudas?</p>`
+    },
+    {
+      kw: ['subterránea','subterranea','socavón','socavon','minería subterránea','mineria subterranea','underground','epp minería','epp mineria'],
+      html: `<p>Para <strong>minería subterránea</strong>, el Decreto 1335 de 1987 establece el EPP mínimo obligatorio:</p>
+<h4>Protección personal obligatoria</h4>
+<ul>
+<li><strong>Casco</strong> con lámpara frontal o integrada certificada</li>
+<li><strong>Botas</strong> con puntera de acero y suela antideslizante</li>
+<li><strong>Respirador FFP3 mínimo</strong> para polvo de sílice — la silicosis es irreversible</li>
+<li><strong>Protección auditiva</strong> si hay equipos de perforación (tapones NRR 29+)</li>
+<li><strong>Arnés o cinturón</strong> si hay riesgo de caída</li>
+</ul>
+<h4>Detección de gases — obligatoria</h4>
+<ul>
+<li>CH₄ (metano), CO (monóxido), H₂S (sulfuro), O₂ (deficiencia)</li>
+<li>Detectores portátiles antes de entrar a cualquier labor</li>
+<li>Sistema de ventilación documentado y operativo</li>
+</ul>
+<div class="warn">⚠️ Con deficiencia de O₂ (menos de 19,5%) <strong>NO se usa respirador filtrante</strong> — se requiere equipo autónomo (SCBA).</div>
+<p>¿Cuántos trabajadores necesita equipar?</p>`
+    },
+    {
+      kw: ['detector','gas','multigas','monóxido','monoxido','metano','sulfuro','calibración','calibracion','bump test','calibrar'],
+      html: `<p>Sobre los <strong>detectores de gas</strong>, los puntos clave de mantenimiento:</p>
+<h4>Mantenimiento mínimo requerido</h4>
+<ul>
+<li><strong>Bump test:</strong> antes de CADA turno. Se expone el sensor a una concentración conocida de gas para verificar que responde correctamente.</li>
+<li><strong>Calibración completa:</strong> cada 6 meses mínimo, o según especificación del fabricante, por laboratorio autorizado o con kit certificado.</li>
+</ul>
+<div class="warn">⚠️ Un detector sin calibración reciente puede dar lecturas falsas. La lectura de "sin peligro" puede ser incorrecta — con consecuencias fatales.</div>
+<h4>Gases a monitorear en minería</h4>
+<table>
+<tr><th>Gas</th><th>Límite de peligro</th></tr>
+<tr><td><strong>O₂</strong> (oxígeno)</td><td>Deficiencia &lt; 19,5%</td></tr>
+<tr><td><strong>CH₄</strong> (metano)</td><td>LEL &gt; 10% → evacuación inmediata</td></tr>
+<tr><td><strong>CO</strong> (monóxido)</td><td>&gt; 25 ppm zona de riesgo</td></tr>
+<tr><td><strong>H₂S</strong> (sulfuro)</td><td>&gt; 10 ppm peligroso — inodoro en alta concentración</td></tr>
+</table>
+<p>¿Cuál es su aplicación específica? Tenemos detectores portátiles y fijos en Full Minería.</p>`
+    },
+    {
+      kw: ['garantía','garantia','defecto','defectuoso','cambio','devolución','devolucion','reclamación','reclamacion','falla','fallo'],
+      html: `<p>Políticas de <strong>garantía y devoluciones</strong> de Full Minería:</p>
+<h4>Garantía de producto</h4>
+<ul>
+<li><strong>EPP de marca:</strong> mínimo 6 meses en condiciones normales de uso</li>
+<li><strong>Equipos anticaída:</strong> si el arnés soportó una caída, se reemplaza — es uso correcto, no falla de producto</li>
+<li><strong>Lámparas y detectores:</strong> 12 meses desde fabricación</li>
+</ul>
+<h4>Devoluciones</h4>
+<ul>
+<li>Plazo: <strong>15 días hábiles</strong> desde la compra</li>
+<li>Condición: producto sin usar, en empaque original</li>
+<li>No se aceptan devoluciones de EPP usado (higiene y seguridad)</li>
+</ul>
+<h4>Cambio por defecto de fabricación</h4>
+<ul>
+<li>Sin plazo límite · Requiere producto + factura + descripción del defecto</li>
+<li>Se envía a sede para revisión técnica</li>
+</ul>
+<p>¿Tiene un caso específico que quiera reportar? Cuénteme qué pasó y lo gestionamos.</p>`
+    },
+    {
+      kw: ['decreto 1072','1072','sg-sst','sgsst','sistema de gestión','sistema de gestion','salud en el trabajo','ministerio de trabajo'],
+      html: `<p>El <strong>Decreto 1072 de 2015</strong> es el marco general del SG-SST en Colombia.</p>
+<h4>Obliga a toda empresa</h4>
+<ul>
+<li>Implementar un <strong>SG-SST activo</strong>, sin importar el tamaño</li>
+<li>Mantener <strong>matriz de identificación de peligros</strong> actualizada</li>
+<li><strong>Entrega documentada de EPP</strong> — cada trabajador debe firmar el recibo del equipo</li>
+<li>El EPP entregado debe corresponder al riesgo identificado en la matriz</li>
+</ul>
+<div class="warn">⚠️ Sin el registro de entrega de EPP, el empleador tiene responsabilidad civil y penal ante un accidente, aunque el trabajador tuviera el equipo.</div>
+<h4>Estándares mínimos (Res. 0312/2019)</h4>
+<table>
+<tr><th>Tamaño empresa</th><th>Estándares</th></tr>
+<tr><td>1–10 trabajadores (riesgo I, II, III)</td><td>7 estándares básicos</td></tr>
+<tr><td>11–50 trabajadores</td><td>21 estándares</td></tr>
+<tr><td>+50 trabajadores o riesgo IV/V</td><td>60 estándares completos</td></tr>
+</table>
+<p>¿Necesita orientación sobre el EPP que corresponde a su matriz de riesgos?</p>`
+    },
+    {
+      kw: ['n95','ffp2','ffp3','sílice','silice','selección respirador','seleccion respirador','qué respirador','que respirador'],
+      html: `<p>Guía de selección para <strong>protección respiratoria</strong>:</p>
+<table>
+<tr><th>Contaminante</th><th>Equipo mínimo</th></tr>
+<tr><td>Polvo ordinario (construcción, madera)</td><td>N95 / FFP2</td></tr>
+<tr><td><strong>Polvo de sílice libre</strong></td><td><strong>FFP3 mínimo</strong> — silicosis es irreversible</td></tr>
+<tr><td>Vapores orgánicos (solventes, pintura)</td><td>Media cara con filtro <strong>A</strong></td></tr>
+<tr><td>Gases ácidos (Cl₂, HCl, SO₂)</td><td>Media cara con filtro <strong>B</strong></td></tr>
+<tr><td>Polvo + gases (minería)</td><td>Media cara filtro <strong>A2B2P3</strong></td></tr>
+<tr><td>Deficiencia de O₂ (&lt; 19,5%)</td><td><strong>Equipo autónomo (SCBA)</strong> — NO filtrante</td></tr>
+</table>
+<p><strong>Importante:</strong> los filtros tienen vida útil limitada — siga las indicaciones del fabricante. Un filtro saturado puede dar falsa sensación de seguridad.</p>
+<p>¿Me describe el trabajo y el contaminante específico? Le recomiendo el equipo exacto.</p>`
+    },
+    {
+      kw: ['caída','caida','cayó','cayo','post caída','post caida','después de caer','soportó una caída','soporto una caida'],
+      html: `<p><strong>Protocolo post-caída — acción inmediata:</strong></p>
+<div class="warn">⚠️ Si el sistema de arresto actuó en una caída real, el arnés, la eslinga y los mosquetones deben retirarse del servicio <strong>INMEDIATAMENTE</strong> — aunque parezcan en buen estado. El daño en fibras internas no es visible y puede fallar en la siguiente caída.</div>
+<h4>Pasos inmediatos</h4>
+<ul>
+<li><strong>Verificar al trabajador</strong> — puede tener síndrome de suspensión</li>
+<li><strong>Rescatar lo antes posible</strong> — una persona suspensa en arnés puede perder el conocimiento en minutos</li>
+<li><strong>Llamar al 123</strong> si hay lesión visible</li>
+</ul>
+<h4>EPP</h4>
+<ul>
+<li>Arnés, eslinga y mosquetones: <strong>descarte y reemplazo inmediato</strong></li>
+<li>Verificar también el estado del punto de anclaje</li>
+</ul>
+<h4>Documentación</h4>
+<ul>
+<li>Reporte el incidente en el SG-SST</li>
+<li>Investigue la causa raíz antes de reiniciar la actividad</li>
+</ul>
+<p>¿Necesita cotización de reposición urgente del equipo?</p>`
+    },
+  ]
+};
+
+// Default fallback responses
+const FALLBACKS = {
+  general: `<p>Entiendo su consulta. Para darle la información exacta, ¿me puede contar un poco más sobre su empresa o el sector en el que trabajan?</p><p>En Full Minería manejamos EPP, equipos de minería, herramientas y dotaciones industriales. Cuénteme qué necesita y le oriento.</p>`,
+  ventas: `<p>Para ayudarle con la cotización, necesito saber <strong>qué producto busca</strong> y la <strong>cantidad aproximada</strong>. ¿Me lo puede confirmar?</p><p>También puede contactarnos directo al WhatsApp <strong>311 243 6563</strong> si prefiere hablar con un asesor.</p>`,
+  soporte: `<p>Entendido. Cuénteme un poco más sobre su consulta — puede ser un pedido, una reclamación, una garantía o cualquier duda sobre nuestros productos.</p><p>Estoy aquí para ayudarle a resolverlo.</p>`
+};
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let currentMode = 'general';
+let isTyping = false;
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+function init() {
+  renderScenarios();
+  renderPromptPills();
+  renderHeaderTags();
+  showWelcome();
+}
+
+function renderScenarios() {
+  const mode = MODES[currentMode];
+  const container = document.getElementById('scenarios-container');
+  container.innerHTML = mode.scenarios.map(s => `
+    <button class="scenario-btn" onclick="runScenario('${escapeQuotes(s.text)}')">
+      <span class="sc-icon">${s.icon}</span>
+      <span class="sc-text">${s.text}</span>
+    </button>
+  `).join('');
+}
+
+function renderPromptPills() {
+  // visual display removed
+}
+
+function renderHeaderTags() {
+  const mode = MODES[currentMode];
+  document.getElementById('chat-mode-name').textContent = mode.name;
+  document.getElementById('chat-mode-sub').textContent = mode.sub;
+}
+
+function showWelcome() {
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = '';
+  addMsgHTML(MODES[currentMode].welcome);
+}
+
+// ═══════════════════════════════════════════════════
+// MODE SWITCHING
+// ═══════════════════════════════════════════════════
+function setMode(mode) {
+  if (mode === currentMode) return;
+  // update card styles
+  const prev = MODES[currentMode];
+  const next = MODES[mode];
+  document.getElementById(prev.cardId).classList.remove('active','blue');
+  const card = document.getElementById(next.cardId);
+  card.classList.add('active');
+  if (next.promptClass === 'blue') card.classList.add('blue');
+
+  currentMode = mode;
+  renderScenarios();
+  renderPromptPills();
+  renderHeaderTags();
+  resetChat();
+}
+
+// ═══════════════════════════════════════════════════
+// CHAT LOGIC
+// ═══════════════════════════════════════════════════
+function addMsgHTML(html, isUser = false) {
+  const msgs = document.getElementById('messages');
+  const now = new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
+  const row = document.createElement('div');
+  row.className = `msg-row${isUser ? ' user' : ''}`;
+
+  if (isUser) {
+    row.innerHTML = `
+      <div class="avatar user">U</div>
+      <div>
+        <div class="bubble user">${html}</div>
+        <div class="msg-time" style="text-align:right">${now}</div>
+      </div>`;
+  } else {
+    row.innerHTML = `
+      <div class="avatar mina">M</div>
+      <div>
+        <div class="bubble mina">${html}</div>
+        <div class="msg-time">${now}</div>
+      </div>`;
+  }
+
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'typing-row';
+  row.id = 'typing-indicator';
+  row.innerHTML = `
+    <div class="avatar mina">M</div>
+    <div class="typing-bubble">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>`;
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+function findResponse(input) {
+  const lower = input.toLowerCase();
+  const pool = RESPONSES[currentMode];
+  for (const item of pool) {
+    if (item.kw.some(k => lower.includes(k))) {
+      return item.html;
+    }
+  }
+  return FALLBACKS[currentMode];
+}
+
+function sendMessage() {
+  if (isTyping) return;
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Show user message
+  addMsgHTML(text.replace(/\n/g, '<br>'), true);
+  input.value = '';
+  autoResize(input);
+
+  // Simulate typing
+  isTyping = true;
+  document.getElementById('send-btn').disabled = true;
+  showTyping();
+
+  const delay = 800 + Math.random() * 700;
+  setTimeout(() => {
+    removeTyping();
+    const response = findResponse(text);
+    addMsgHTML(response);
+    isTyping = false;
+    document.getElementById('send-btn').disabled = false;
+  }, delay);
+}
+
+function runScenario(text) {
+  if (isTyping) return;
+  const input = document.getElementById('msg-input');
+  input.value = text;
+  sendMessage();
+}
+
+function resetChat() {
+  document.getElementById('messages').innerHTML = '';
+  showWelcome();
+}
+
+// ═══════════════════════════════════════════════════
+// INPUT HELPERS
+// ═══════════════════════════════════════════════════
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function escapeQuotes(s) {
+  return s.replace(/'/g, "\\'");
+}
+
+// ═══════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
