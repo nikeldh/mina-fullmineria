@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-OPS Dashboard — Full Minería</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0A0A0A;--surface:#111;--card:#161616;--border:#242424;
+  --gold:#D4A017;--gold-l:#E8B830;--gold-dim:rgba(212,160,23,.12);
+  --green:#10B981;--green-dim:rgba(16,185,129,.12);
+  --yellow:#F59E0B;--yellow-dim:rgba(245,158,11,.12);
+  --red:#EF4444;--red-dim:rgba(239,68,68,.12);
+  --blue:#3B82F6;--blue-dim:rgba(59,130,246,.12);
+  --purple:#8B5CF6;
+  --text:#E8E8E8;--muted:#888;--dim:#444;--white:#FFF;
+}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:sticky;top:0;z-index:200;
+  height:54px;background:rgba(17,17,17,.96);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 22px;gap:0;
+}
+.topbar-brand{display:flex;align-items:center;gap:10px;margin-right:28px;flex-shrink:0;}
+.logo-box{width:32px;height:32px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12pt;color:#000;}
+.brand-name{font-size:10.5pt;font-weight:800;color:var(--white);}
+.brand-name span{color:var(--gold);}
+.brand-sub{font-size:7.5pt;color:var(--muted);margin-top:1px;}
+.tab-nav{display:flex;gap:2px;flex:1;overflow-x:auto;}
+.tab-nav::-webkit-scrollbar{display:none;}
+.tab-btn{
+  padding:6px 15px;font-size:8.5pt;font-weight:500;
+  color:var(--muted);background:transparent;border:none;
+  border-radius:6px;cursor:pointer;transition:all .15s;white-space:nowrap;
+  display:flex;align-items:center;gap:5px;
+}
+.tab-btn:hover{color:var(--text);background:rgba(255,255,255,.05);}
+.tab-btn.active{color:var(--white);background:rgba(255,255,255,.08);}
+.tab-dot{width:5px;height:5px;border-radius:50%;background:transparent;flex-shrink:0;}
+.tab-btn.active .tab-dot{background:var(--gold);}
+.topbar-right{display:flex;align-items:center;gap:10px;margin-left:16px;flex-shrink:0;}
+select.sede-sel{
+  background:var(--card);border:1px solid var(--border);
+  color:var(--text);font-size:8pt;font-family:inherit;
+  padding:5px 26px 5px 10px;border-radius:6px;cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 7px center;
+}
+.status-pill{
+  display:flex;align-items:center;gap:6px;
+  background:var(--green-dim);border:1px solid rgba(16,185,129,.25);
+  padding:4px 10px;border-radius:20px;font-size:7.5pt;font-weight:600;color:var(--green);
+}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pg 2s infinite;}
+@keyframes pg{0%,100%{opacity:1;}50%{opacity:.3;}}
+.date-chip{font-size:7.5pt;color:var(--muted);background:var(--card);border:1px solid var(--border);padding:4px 10px;border-radius:6px;white-space:nowrap;}
+
+/* ── LAYOUT ── */
+.main{padding:22px;max-width:1700px;margin:0 auto;}
+.section-lbl{font-size:7pt;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.section-lbl::after{content:'';flex:1;height:1px;background:var(--border);}
+.mb-4{margin-bottom:16px;}.mb-6{margin-bottom:24px;}.mt-3{margin-top:12px;}.mt-4{margin-top:16px;}
+.flex-between{display:flex;justify-content:space-between;align-items:center;}
+.flex-c{display:flex;align-items:center;}
+.gap-2{gap:8px;}.gap-3{gap:12px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:16px;}
+
+/* ── CARD ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;}
+.card:hover{border-color:rgba(212,160,23,.2);}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+.kpi4{grid-template-columns:repeat(4,1fr)!important;}
+.kpi-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:18px 20px;
+  position:relative;overflow:hidden;transition:border-color .2s, transform .15s;
+}
+.kpi-card:hover{border-color:var(--gold);transform:translateY(-1px);}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi-card.c-green::before{background:var(--green);}
+.kpi-card.c-yellow::before{background:var(--yellow);}
+.kpi-card.c-red::before{background:var(--red);}
+.kpi-card.c-gold::before{background:var(--gold);}
+.kpi-card.c-blue::before{background:var(--blue);}
+.kpi-lbl{font-size:7.5pt;color:var(--muted);font-weight:500;margin-bottom:8px;}
+.kpi-val{font-size:22pt;font-weight:800;color:var(--white);line-height:1;margin-bottom:8px;}
+.kpi-val.v-red{color:var(--red);}.kpi-val.v-yellow{color:var(--yellow);}.kpi-val.v-green{color:var(--green);}
+.kpi-trend{font-size:7.5pt;font-weight:600;display:flex;align-items:center;gap:4px;}
+.kpi-trend.up{color:var(--green);}.kpi-trend.dn{color:var(--red);}.kpi-trend.neu{color:var(--muted);}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:7pt;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.bg{background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,.2);}
+.by{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(245,158,11,.2);}
+.br{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.bb{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
+.bo{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(212,160,23,.2);}
+.bm{background:rgba(136,136,136,.1);color:var(--muted);border:1px solid rgba(136,136,136,.15);}
+
+/* ── SEMÁFORO ── */
+.sem{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.sg{background:var(--green);box-shadow:0 0 6px rgba(16,185,129,.5);}
+.sy{background:var(--yellow);box-shadow:0 0 6px rgba(245,158,11,.5);}
+.sr{background:var(--red);box-shadow:0 0 6px rgba(239,68,68,.5);animation:pr 1.5s infinite;}
+@keyframes pr{0%,100%{box-shadow:0 0 4px rgba(239,68,68,.5);}50%{box-shadow:0 0 10px rgba(239,68,68,.9);}}
+
+/* ── ALERTS STRIP ── */
+.alerts-strip{
+  background:rgba(212,160,23,.05);border:1px solid rgba(212,160,23,.2);
+  border-radius:10px;padding:14px 18px;margin-bottom:22px;
+  display:flex;align-items:flex-start;gap:12px;
+}
+.al-icon{font-size:15pt;flex-shrink:0;margin-top:2px;}
+.al-title{font-size:7.5pt;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.al-list{display:flex;flex-wrap:wrap;gap:7px;}
+.al-item{
+  background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.06);
+  border-radius:6px;padding:6px 11px;font-size:8pt;color:var(--text);
+  display:flex;align-items:center;gap:6px;cursor:pointer;transition:border-color .15s;
+}
+.al-item:hover{border-color:rgba(212,160,23,.4);}
+.al-tag{font-size:6.5pt;font-weight:700;color:var(--gold);background:var(--gold-dim);padding:1px 5px;border-radius:3px;}
+.al-side{flex-shrink:0;text-align:right;min-width:70px;}
+
+/* ── PIPELINE STAGES ── */
+.stage-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.stage-lbl{font-size:8pt;color:var(--muted);width:120px;flex-shrink:0;}
+.stage-wrap{flex:1;height:26px;background:rgba(255,255,255,.04);border-radius:5px;overflow:hidden;}
+.stage-bar{height:100%;border-radius:5px;display:flex;align-items:center;padding-left:8px;font-size:7.5pt;font-weight:700;transition:width .5s ease;}
+.stage-n{font-size:8pt;font-weight:700;color:var(--white);width:26px;text-align:right;flex-shrink:0;}
+.stage-v{font-size:7.5pt;color:var(--muted);width:75px;text-align:right;flex-shrink:0;}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:8.5pt;}
+.tbl th{text-align:left;padding:8px 12px;color:var(--muted);font-size:7pt;font-weight:600;text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--border);}
+.tbl td{padding:10px 12px;border-bottom:1px solid rgba(36,36,36,.6);color:var(--text);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+.tb{font-weight:600;color:var(--white);}
+.tm{color:var(--muted);font-size:7.5pt;}
+
+/* ── CHART ── */
+.chart-title{font-size:9pt;font-weight:600;color:var(--text);margin-bottom:3px;}
+.chart-sub{font-size:7.5pt;color:var(--muted);margin-bottom:14px;}
+.cw{position:relative;height:220px;}
+.cw-sm{height:170px;}.cw-lg{height:270px;}
+
+/* ── RISK ROWS ── */
+.risk-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(36,36,36,.6);}
+.risk-row:last-child{border-bottom:none;}
+.risk-action{font-size:7.5pt;color:var(--gold);cursor:pointer;padding:3px 8px;border:1px solid rgba(212,160,23,.25);border-radius:4px;background:var(--gold-dim);white-space:nowrap;flex-shrink:0;}
+.risk-action:hover{border-color:var(--gold);}
+
+/* ── ASESOR ── */
+.asesor-row{display:flex;align-items:center;gap:11px;}
+.av{width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:8.5pt;font-weight:700;color:var(--white);flex-shrink:0;}
+.asesor-bar-bg{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.asesor-bar-fill{height:100%;border-radius:3px;transition:width .4s;}
+.asesor-pct{font-size:7.5pt;font-weight:700;width:36px;text-align:right;flex-shrink:0;}
+
+/* ── TABS ── */
+.tab-sec{display:none;}
+.tab-sec.active{display:block;}
+
+/* ── LAST UPDATE ── */
+.upd-chip{display:inline-flex;align-items:center;gap:6px;font-size:7.5pt;color:var(--muted);background:var(--card);border:1px solid var(--border);padding:4px 10px;border-radius:6px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1300px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:900px){
+  .g2,.g3,.g21{grid-template-columns:1fr;}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .main{padding:14px;}
+  .topbar{padding:0 14px;}
+}
+@media(max-width:600px){
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+  .brand-sub,.date-chip{display:none;}
+  .tab-btn{padding:5px 10px;font-size:8pt;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="logo-box">FM</div>
+    <div>
+      <div class="brand-name">AI-OPS · Full<span>Minería</span></div>
+      <div class="brand-sub">Sistema de Control de Negocio · Demo v1.0</div>
+    </div>
+  </div>
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('overview')"><span class="tab-dot"></span>Visión General</button>
+    <button class="tab-btn" onclick="switchTab('ventas')"><span class="tab-dot"></span>Ventas</button>
+    <button class="tab-btn" onclick="switchTab('postventa')"><span class="tab-dot"></span>Postventa</button>
+    <button class="tab-btn" onclick="switchTab('data')"><span class="tab-dot"></span>Data & Performance</button>
+    <button class="tab-btn" onclick="switchTab('operacion')"><span class="tab-dot"></span>Operación</button>
+  </nav>
+
+  <div class="topbar-right">
+    <select class="sede-sel" id="sedeSelect" onchange="changeSede(this.value)">
+      <option value="todas">Todas las sedes</option>
+      <option value="bogota">Bogotá</option>
+      <option value="medellin">Medellín</option>
+      <option value="cali">Cali</option>
+      <option value="barranquilla">Barranquilla</option>
+      <option value="bucaramanga">Bucaramanga</option>
+    </select>
+    <div class="date-chip" id="dateBadge">—</div>
+    <div class="status-pill"><div class="pulse"></div>Sistema activo</div>
+  </div>
+</header>
+
+<main class="main">
+
+<!-- ── ALERTS STRIP ── -->
+<div class="alerts-strip">
+  <div class="al-icon">🤖</div>
+  <div style="flex:1">
+    <div class="al-title">IA · Alertas y Recomendaciones Activas</div>
+    <div class="al-list" id="alertsList"></div>
+  </div>
+  <div class="al-side">
+    <div style="font-size:7pt;color:var(--muted)">Interacciones analizadas</div>
+    <div style="font-size:14pt;font-weight:800;color:var(--gold)" id="aiCount">847</div>
+    <div style="font-size:7pt;color:var(--muted)">hoy</div>
+  </div>
+</div>
+
+<!-- ════════════ OVERVIEW ════════════ -->
+<div class="tab-sec active" id="tab-overview">
+  <div class="section-lbl">Indicadores clave · Actualización en tiempo real</div>
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="g21 mb-6">
+    <div class="card">
+      <div class="flex-between mb-4">
+        <div><div class="chart-title">Ingresos mensuales</div><div class="chart-sub">Evolución 12 meses · Millones COP</div></div>
+        <div class="upd-chip"><div class="pulse"></div><span id="lastUpd">Hace 2 min</span></div>
+      </div>
+      <div class="cw"><canvas id="chartIngresos"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="chart-title">Pipeline por etapa</div>
+      <div class="chart-sub">Oportunidades activas</div>
+      <div id="pipelineView" class="mt-4"></div>
+    </div>
+  </div>
+
+  <div class="g2 mb-4">
+    <div class="card">
+      <div class="chart-title">Ingresos por canal</div>
+      <div class="chart-sub">Distribución del mes en curso</div>
+      <div class="cw-sm"><canvas id="chartCanales"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="chart-title">Clientes en riesgo</div>
+      <div class="chart-sub">Requieren acción inmediata</div>
+      <div id="riskView" class="mt-3"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ VENTAS ════════════ -->
+<div class="tab-sec" id="tab-ventas">
+  <div class="g2 mb-6">
+    <div class="card">
+      <div class="chart-title">Embudo de ventas</div>
+      <div class="chart-sub">Conversión por etapa · mes actual</div>
+      <div class="cw"><canvas id="chartFunnel"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="chart-title">Ventas por sede</div>
+      <div class="chart-sub">Ingresos COP por sucursal</div>
+      <div class="cw"><canvas id="chartSedes"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="flex-between mb-4">
+      <div><div class="chart-title">Oportunidades activas</div><div class="chart-sub">Rojo si sin respuesta >24h · Ordenadas por criticidad</div></div>
+      <div class="badge bo" id="totalOps">34 en pipeline</div>
+    </div>
+    <table class="tbl" id="tablaOps">
+      <thead><tr><th>Cliente</th><th>Sector</th><th>Valor estimado</th><th>Etapa</th><th>Sin respuesta</th><th>Estado</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════ POSTVENTA ════════════ -->
+<div class="tab-sec" id="tab-postventa">
+  <div class="kpi-grid kpi4 mb-6" id="kpiPost"></div>
+  <div class="g2 mb-6">
+    <div class="card">
+      <div class="chart-title">Incidencias por tipo</div>
+      <div class="chart-sub">Distribución acumulada del mes</div>
+      <div class="cw"><canvas id="chartIncTipo"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="chart-title">Incidencias por sede</div>
+      <div class="chart-sub">Abiertas vs resueltas este mes</div>
+      <div class="cw"><canvas id="chartIncSede"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="flex-between mb-4">
+      <div><div class="chart-title">Tablero de incidencias activas</div><div class="chart-sub">Ordenadas por criticidad · Semáforo de riesgo</div></div>
+      <div class="badge br" id="incBadge">8 abiertas</div>
+    </div>
+    <table class="tbl" id="tablaInc">
+      <thead><tr><th>Cliente</th><th>Tipo</th><th>Sede</th><th>Apertura</th><th>Tiempo abierta</th><th>Prioridad</th><th>Estado</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════ DATA ════════════ -->
+<div class="tab-sec" id="tab-data">
+  <div class="g3 mb-6">
+    <div class="card">
+      <div class="chart-title">Productos más vendidos</div>
+      <div class="chart-sub">Unidades · mes actual</div>
+      <div class="cw"><canvas id="chartProd"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="chart-title">Categorías por ingresos</div>
+      <div class="chart-sub">Participación en ventas COP</div>
+      <div class="cw"><canvas id="chartCat"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="chart-title">Canal vs periodo anterior</div>
+      <div class="chart-sub">Mes actual vs mes anterior (%)</div>
+      <div class="cw"><canvas id="chartCanalComp"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="flex-between mb-4">
+      <div><div class="chart-title">Top clientes por valor</div><div class="chart-sub">Acumulado mes · Semáforo de fidelidad</div></div>
+      <div class="badge bg">Actualizado hoy</div>
+    </div>
+    <table class="tbl" id="tablaClientes">
+      <thead><tr><th>#</th><th>Cliente</th><th>Sector</th><th>Sede</th><th>Compras mes</th><th>Ticket prom.</th><th>Frecuencia</th><th>Estado</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════ OPERACIÓN ════════════ -->
+<div class="tab-sec" id="tab-operacion">
+  <div class="kpi-grid kpi4 mb-6" id="kpiOp"></div>
+  <div class="g2 mb-6">
+    <div class="card">
+      <div class="chart-title">Carga de trabajo por asesor</div>
+      <div class="chart-sub">Conversaciones activas + tareas pendientes</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;" id="asesoresWrap"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title">Automatización IA vs manual</div>
+      <div class="chart-sub">% tareas resueltas sin intervención humana</div>
+      <div class="cw-sm"><canvas id="chartAuto"></canvas></div>
+      <div style="display:flex;gap:20px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+        <div><div style="font-size:7.5pt;color:var(--muted)">Eficiencia operativa</div><div style="font-size:18pt;font-weight:800;color:var(--green)">71%</div><div style="font-size:7.5pt;color:var(--muted)">Meta: 85%</div></div>
+        <div><div style="font-size:7.5pt;color:var(--muted)">Cotizaciones pendientes</div><div style="font-size:18pt;font-weight:800;color:var(--yellow)">7</div><div style="font-size:7.5pt;color:var(--muted)">sin enviar >2h</div></div>
+        <div><div style="font-size:7.5pt;color:var(--muted)">Tarea más retrasada</div><div style="font-size:18pt;font-weight:800;color:var(--red)">+6.4h</div><div style="font-size:7.5pt;color:var(--muted)">confirmación OC</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="chart-title mb-4">Cuellos de botella detectados por IA</div>
+    <table class="tbl" id="tablaBot">
+      <thead><tr><th>Proceso</th><th>Actual</th><th>Meta</th><th>Desviación</th><th>Impacto</th><th>Recomendación IA</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+</main><!-- /main -->
+
+<script>
+// ═══════════════════════════════════════════════
+// MOCK DATA
+// ═══════════════════════════════════════════════
+const SEDES = {
+  todas:        'Todas las sedes',
+  bogota:       'Bogotá',
+  medellin:     'Medellín',
+  cali:         'Cali',
+  barranquilla: 'Barranquilla',
+  bucaramanga:  'Bucaramanga',
+};
+
+const D = {
+  todas: {
+    kpis:[
+      {lbl:'💰 Ingresos del mes',   val:'$847.5M', trend:'↑ +14% vs mes anterior', cls:'up', c:'c-green'},
+      {lbl:'📊 Oportunidades activas',val:'34',    trend:'↑ +6 nuevas esta semana', cls:'up', c:'c-gold'},
+      {lbl:'⚠️ Incidencias abiertas', val:'8',     trend:'↓ 2 críticas sin respuesta',cls:'dn',c:'c-red', vc:'v-red'},
+      {lbl:'⏱ Tiempo resp. promedio', val:'2.4h',  trend:'↓ Meta: <2h · revisar',   cls:'dn', c:'c-yellow', vc:'v-yellow'},
+      {lbl:'🎯 Tasa de conversión',   val:'38%',   trend:'↑ +3pp mes a mes',        cls:'up', c:'c-green'},
+    ],
+    pipeline:[
+      {e:'Leads captados',   n:89, v:'$2.340M', p:100},
+      {e:'Contactados',      n:67, v:'$1.890M', p:75},
+      {e:'Cotizados',        n:44, v:'$1.240M', p:49},
+      {e:'En negociación',   n:34, v:'$893M',   p:38},
+      {e:'OC confirmada',    n:22, v:'$621M',   p:25},
+      {e:'Cerrado ganado',   n:18, v:'$512M',   p:20},
+    ],
+    meses:[420,390,480,510,490,560,610,580,620,700,780,847],
+    canales:{WhatsApp:54,Web:21,Presencial:18,Email:7},
+    sedesV:{Bogotá:412,Medellín:187,Cali:98,Barranquilla:76,Bucaramanga:74},
+  },
+  bogota: {
+    kpis:[
+      {lbl:'💰 Ingresos del mes',    val:'$412.3M',trend:'↑ +18% vs mes anterior',cls:'up',c:'c-green'},
+      {lbl:'📊 Oportunidades activas',val:'16',    trend:'↑ +3 nuevas esta semana',cls:'up',c:'c-gold'},
+      {lbl:'⚠️ Incidencias abiertas', val:'3',     trend:'→ 1 crítica en seguimiento',cls:'neu',c:'c-yellow'},
+      {lbl:'⏱ Tiempo resp. promedio', val:'1.8h',  trend:'↑ Bajo meta · excelente',cls:'up',c:'c-green'},
+      {lbl:'🎯 Tasa de conversión',   val:'42%',   trend:'↑ +5pp mes a mes',       cls:'up',c:'c-green'},
+    ],
+    pipeline:[
+      {e:'Leads captados', n:42,v:'$1.120M',p:100},
+      {e:'Contactados',    n:35,v:'$942M',  p:83},
+      {e:'Cotizados',      n:22,v:'$634M',  p:52},
+      {e:'En negociación', n:16,v:'$412M',  p:38},
+      {e:'OC confirmada',  n:11,v:'$312M',  p:26},
+      {e:'Cerrado ganado', n:9, v:'$253M',  p:21},
+    ],
+    meses:[195,180,215,238,225,260,285,270,295,330,375,412],
+    canales:{WhatsApp:62,Web:19,Presencial:14,Email:5},
+    sedesV:{Bogotá:412,Medellín:0,Cali:0,Barranquilla:0,Bucaramanga:0},
+  },
+  medellin: {
+    kpis:[
+      {lbl:'💰 Ingresos del mes',    val:'$187.2M',trend:'↑ +9% vs mes anterior', cls:'up', c:'c-green'},
+      {lbl:'📊 Oportunidades activas',val:'8',    trend:'↑ +1 nueva esta semana', cls:'up', c:'c-gold'},
+      {lbl:'⚠️ Incidencias abiertas', val:'2',    trend:'→ Sin cambio',           cls:'neu',c:'c-yellow'},
+      {lbl:'⏱ Tiempo resp. promedio', val:'3.1h', trend:'↓ Sobre meta · revisar', cls:'dn', c:'c-red', vc:'v-red'},
+      {lbl:'🎯 Tasa de conversión',   val:'34%',  trend:'↓ -2pp mes a mes',       cls:'dn', c:'c-yellow'},
+    ],
+    pipeline:[
+      {e:'Leads captados', n:18,v:'$480M', p:100},
+      {e:'Contactados',    n:13,v:'$360M', p:72},
+      {e:'Cotizados',      n:9, v:'$240M', p:50},
+      {e:'En negociación', n:8, v:'$198M', p:44},
+      {e:'OC confirmada',  n:4, v:'$102M', p:22},
+      {e:'Cerrado ganado', n:3, v:'$78M',  p:17},
+    ],
+    meses:[88,82,96,110,104,118,130,124,136,154,172,187],
+    canales:{WhatsApp:48,Web:25,Presencial:20,Email:7},
+    sedesV:{Bogotá:0,Medellín:187,Cali:0,Barranquilla:0,Bucaramanga:0},
+  },
+  cali: {
+    kpis:[
+      {lbl:'💰 Ingresos del mes',    val:'$98.4M', trend:'↑ +6% vs mes anterior', cls:'up', c:'c-green'},
+      {lbl:'📊 Oportunidades activas',val:'5',     trend:'→ Sin cambio',           cls:'neu',c:'c-gold'},
+      {lbl:'⚠️ Incidencias abiertas', val:'2',     trend:'↓ 1 nueva hoy',          cls:'dn', c:'c-yellow'},
+      {lbl:'⏱ Tiempo resp. promedio', val:'2.7h',  trend:'↓ Ligeramente sobre meta',cls:'dn',c:'c-yellow'},
+      {lbl:'🎯 Tasa de conversión',   val:'36%',   trend:'↑ +1pp',                 cls:'up', c:'c-green'},
+    ],
+    pipeline:[
+      {e:'Leads captados', n:12,v:'$320M', p:100},
+      {e:'Contactados',    n:9, v:'$240M', p:75},
+      {e:'Cotizados',      n:6, v:'$160M', p:50},
+      {e:'En negociación', n:5, v:'$128M', p:42},
+      {e:'OC confirmada',  n:3, v:'$78M',  p:25},
+      {e:'Cerrado ganado', n:2, v:'$52M',  p:17},
+    ],
+    meses:[46,42,50,56,52,60,66,62,70,80,91,98],
+    canales:{WhatsApp:51,Web:23,Presencial:20,Email:6},
+    sedesV:{Bogotá:0,Medellín:0,Cali:98,Barranquilla:0,Bucaramanga:0},
+  },
+  barranquilla: {
+    kpis:[
+      {lbl:'💰 Ingresos del mes',    val:'$76.1M', trend:'↑ +4% vs mes anterior', cls:'up', c:'c-green'},
+      {lbl:'📊 Oportunidades activas',val:'3',     trend:'→ Estable',              cls:'neu',c:'c-gold'},
+      {lbl:'⚠️ Incidencias abiertas', val:'1',     trend:'↑ Bajo control ✓',       cls:'up', c:'c-green'},
+      {lbl:'⏱ Tiempo resp. promedio', val:'2.2h',  trend:'↑ Bajo meta ✓',          cls:'up', c:'c-green'},
+      {lbl:'🎯 Tasa de conversión',   val:'39%',   trend:'↑ +2pp',                 cls:'up', c:'c-green'},
+    ],
+    pipeline:[
+      {e:'Leads captados', n:9, v:'$220M', p:100},
+      {e:'Contactados',    n:7, v:'$178M', p:78},
+      {e:'Cotizados',      n:4, v:'$96M',  p:44},
+      {e:'En negociación', n:3, v:'$72M',  p:33},
+      {e:'OC confirmada',  n:2, v:'$48M',  p:22},
+      {e:'Cerrado ganado', n:2, v:'$43M',  p:22},
+    ],
+    meses:[36,33,40,44,41,48,52,49,55,62,70,76],
+    canales:{WhatsApp:55,Web:18,Presencial:22,Email:5},
+    sedesV:{Bogotá:0,Medellín:0,Cali:0,Barranquilla:76,Bucaramanga:0},
+  },
+  bucaramanga: {
+    kpis:[
+      {lbl:'💰 Ingresos del mes',    val:'$74.5M', trend:'↑ +11% vs mes anterior',cls:'up', c:'c-green'},
+      {lbl:'📊 Oportunidades activas',val:'2',     trend:'↑ +1 nueva',             cls:'up', c:'c-gold'},
+      {lbl:'⚠️ Incidencias abiertas', val:'0',     trend:'↑ Sin incidencias ✓',    cls:'up', c:'c-green'},
+      {lbl:'⏱ Tiempo resp. promedio', val:'1.9h',  trend:'↑ Excelente ✓',          cls:'up', c:'c-green'},
+      {lbl:'🎯 Tasa de conversión',   val:'41%',   trend:'↑ +4pp',                 cls:'up', c:'c-green'},
+    ],
+    pipeline:[
+      {e:'Leads captados', n:8, v:'$198M', p:100},
+      {e:'Contactados',    n:6, v:'$150M', p:75},
+      {e:'Cotizados',      n:3, v:'$74M',  p:37},
+      {e:'En negociación', n:2, v:'$50M',  p:25},
+      {e:'OC confirmada',  n:2, v:'$50M',  p:25},
+      {e:'Cerrado ganado', n:2, v:'$48M',  p:25},
+    ],
+    meses:[34,31,38,42,40,46,50,47,52,59,67,74],
+    canales:{WhatsApp:49,Web:26,Presencial:18,Email:7},
+    sedesV:{Bogotá:0,Medellín:0,Cali:0,Barranquilla:0,Bucaramanga:74},
+  },
+};
+
+const OPORTUNIDADES = [
+  {cl:'Carboneras El Cerrejón',  sec:'Minería',        val:'$48.5M', et:'En negociación',  h:52, sede:'Bogotá'},
+  {cl:'Ecopetrol S.A.',          sec:'Petróleo/Gas',   val:'$124.0M',et:'En negociación',  h:48, sede:'Bogotá'},
+  {cl:'GranColombia Gold',       sec:'Minería',        val:'$91.0M', et:'Cotizados',        h:72, sede:'Bogotá'},
+  {cl:'Constructora Amarilo',    sec:'Construcción',   val:'$32.1M', et:'Cotizados',        h:31, sede:'Bogotá'},
+  {cl:'Drummond Colombia',       sec:'Minería',        val:'$87.2M', et:'OC confirmada',    h:4,  sede:'Bogotá'},
+  {cl:'Mineros S.A.',            sec:'Minería',        val:'$63.5M', et:'En negociación',   h:26, sede:'Medellín'},
+  {cl:'Argos Cementos',          sec:'Construcción',   val:'$21.4M', et:'Contactados',      h:19, sede:'Medellín'},
+  {cl:'Planta TecnoGlass',       sec:'Manufactura',    val:'$14.8M', et:'Cotizados',        h:8,  sede:'Cali'},
+  {cl:'Omya de Colombia',        sec:'Minería',        val:'$19.7M', et:'Contactados',      h:54, sede:'Cali'},
+  {cl:'Constructora Bolívar',    sec:'Construcción',   val:'$18.6M', et:'Contactados',      h:12, sede:'Barranquilla'},
+  {cl:'ISA Intercolombia',       sec:'Energía',        val:'$29.3M', et:'Cotizados',        h:6,  sede:'Bucaramanga'},
+  {cl:'Acería Paz del Río',      sec:'Siderurgia',     val:'$42.1M', et:'En negociación',   h:38, sede:'Bogotá'},
+];
+
+const INCIDENCIAS = [
+  {cl:'GranColombia Gold',    tp:'Garantía EPP anticaída',  sede:'Bogotá',       fStr:'hace 4 días', h:96, pr:'Alta',  st:'Sin respuesta', crit:true},
+  {cl:'Ecopetrol S.A.',       tp:'Entrega incompleta',      sede:'Bogotá',       fStr:'hace 2 días', h:48, pr:'Alta',  st:'En revisión',   crit:false},
+  {cl:'Argos Cementos',       tp:'Consulta técnica urgente',sede:'Medellín',     fStr:'hace 3 días', h:72, pr:'Alta',  st:'Sin respuesta',  crit:true},
+  {cl:'Drummond Colombia',    tp:'Cambio de producto',      sede:'Bogotá',       fStr:'hace 26h',    h:26, pr:'Media', st:'Escalada',       crit:false},
+  {cl:'Planta TecnoGlass',    tp:'Defecto de fabricación',  sede:'Cali',         fStr:'hace 5h',     h:5,  pr:'Media', st:'Abierta',        crit:false},
+  {cl:'Constructora Bolívar', tp:'Tiempo de entrega',       sede:'Barranquilla', fStr:'hace 6h',     h:6,  pr:'Baja',  st:'Abierta',        crit:false},
+  {cl:'ISA Intercolombia',    tp:'Garantía equipo',         sede:'Bucaramanga',  fStr:'hace 24h',    h:24, pr:'Media', st:'En proceso',     crit:false},
+  {cl:'Mineros S.A.',         tp:'Reposición urgente',      sede:'Medellín',     fStr:'hace 2h',     h:2,  pr:'Alta',  st:'Recibida',       crit:false},
+];
+
+const TOP_CLIENTES = [
+  {cl:'Ecopetrol S.A.',         sec:'Petróleo/Gas',  sede:'Bogotá',      cm:'$342.0M',tk:'$57.0M',fr:'6x/año', s:'sg'},
+  {cl:'Drummond Colombia',      sec:'Minería',       sede:'Bogotá',      cm:'$287.5M',tk:'$95.8M',fr:'3x/año', s:'sg'},
+  {cl:'Carboneras El Cerrejón', sec:'Minería',       sede:'Bogotá',      cm:'$214.0M',tk:'$42.8M',fr:'5x/año', s:'sg'},
+  {cl:'GranColombia Gold',      sec:'Minería',       sede:'Bogotá',      cm:'$189.2M',tk:'$37.8M',fr:'5x/año', s:'sr'},
+  {cl:'Constructora Amarilo',   sec:'Construcción',  sede:'Bogotá',      cm:'$98.6M', tk:'$16.4M',fr:'6x/año', s:'sg'},
+  {cl:'Argos Cementos',         sec:'Construcción',  sede:'Medellín',    cm:'$76.4M', tk:'$19.1M',fr:'4x/año', s:'sy'},
+  {cl:'Mineros S.A.',           sec:'Minería',       sede:'Medellín',    cm:'$68.1M', tk:'$34.1M',fr:'2x/año', s:'sy'},
+  {cl:'Acería Paz del Río',     sec:'Siderurgia',    sede:'Bogotá',      cm:'$54.3M', tk:'$18.1M',fr:'3x/año', s:'sg'},
+  {cl:'ISA Intercolombia',      sec:'Energía',       sede:'Bucaramanga', cm:'$42.9M', tk:'$8.6M', fr:'5x/año', s:'sg'},
+  {cl:'Planta TecnoGlass',      sec:'Manufactura',   sede:'Cali',        cm:'$31.7M', tk:'$5.3M', fr:'6x/año', s:'sy'},
+];
+
+const ASESORES = [
+  {n:'Carlos Mendoza',  i:'CM', c:12, mx:15, col:'#10B981'},
+  {n:'Valeria Ruiz',    i:'VR', c:14, mx:15, col:'#F59E0B'},
+  {n:'Jorge Herrera',   i:'JH', c:9,  mx:15, col:'#10B981'},
+  {n:'Catalina Torres', i:'CT', c:15, mx:15, col:'#EF4444'},
+  {n:'Andrés Ospina',   i:'AO', c:7,  mx:15, col:'#10B981'},
+];
+
+const BOTTLENECKS = [
+  {p:'Respuesta a leads nuevos',   ac:'3.8h', mt:'<1h',  dv:'+280%', imp:'Crítico', rec:'Automatizar primer contacto por WhatsApp con Mina'},
+  {p:'Tiempo de cotización',       ac:'4.2h', mt:'<2h',  dv:'+110%', imp:'Alto',    rec:'Activar plantillas de cotización IA en Mina'},
+  {p:'Registro pedidos en ERP',    ac:'2.1h', mt:'<30m', dv:'+320%', imp:'Alto',    rec:'Integración directa World Office vía API'},
+  {p:'Confirmación OC al cliente', ac:'6.4h', mt:'<1h',  dv:'+540%', imp:'Crítico', rec:'Notificación automática post-confirmación'},
+  {p:'Escalado incidencias >48h',  ac:'62%',  mt:'0%',   dv:'—',     imp:'Alto',    rec:'Revisar protocolo de escalado en Medellín'},
+];
+
+const ALERTS = [
+  {ic:'🔴', tx:'GranColombia Gold — incidencia sin respuesta hace 4 días', tg:'CRÍTICO'},
+  {ic:'🟡', tx:'Ecopetrol S.A. — oportunidad sin actividad hace 48h', tg:'VENTAS'},
+  {ic:'🟡', tx:'Argos Cementos — soporte sin atender hace 72h', tg:'SOPORTE'},
+  {ic:'💡', tx:'Arnés Steelpro PRO-3 creció +34% en demanda — revisar stock', tg:'IA'},
+  {ic:'🔴', tx:'Catalina Torres al 100% de carga — redistribuir tareas', tg:'OPS'},
+  {ic:'💡', tx:'3 clientes VIP sin compra en >45 días — acción comercial', tg:'IA'},
+  {ic:'💡', tx:'WhatsApp genera 54% ingresos — ampliar automatización', tg:'IA'},
+];
+
+const RISK = [
+  {n:'GranColombia Gold',   is:'2 incidencias abiertas + 4 días sin respuesta',  s:'sr'},
+  {n:'Argos Cementos',      is:'Soporte sin atender 72h + caída en frecuencia',  s:'sr'},
+  {n:'Mineros S.A.',        is:'Frecuencia de compra cayó 40% este trimestre',   s:'sy'},
+  {n:'Planta TecnoGlass',   is:'45 días sin pedido — cliente habitualmente mensual', s:'sy'},
+];
+
+// ═══════════════════════════════════════════════
+// STATE & CHARTS
+// ═══════════════════════════════════════════════
+let sede = 'todas';
+let tab = 'overview';
+let CH = {};
+const MONTHS = ['Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene','Feb','Mar','Abr','May'];
+Chart.defaults.color = '#666';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+Chart.defaults.font.family = "'Inter',sans-serif";
+Chart.defaults.font.size = 10;
+
+function mk(id, cfg) {
+  if (CH[id]) CH[id].destroy();
+  const c = document.getElementById(id);
+  if (c) CH[id] = new Chart(c, cfg);
+}
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+function renderDate() {
+  const n = new Date();
+  document.getElementById('dateBadge').textContent =
+    n.toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'}) + ' · ' +
+    n.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('lastUpd').textContent = 'Hace ' + Math.floor(Math.random()*3+1) + ' min';
+}
+
+function renderAlerts() {
+  document.getElementById('alertsList').innerHTML = ALERTS.map(a =>
+    `<div class="al-item"><span>${a.ic}</span><span>${a.tx}</span><span class="al-tag">${a.tg}</span></div>`
+  ).join('');
+}
+
+function renderKPIs() {
+  const kpis = D[sede].kpis;
+  document.getElementById('kpiGrid').innerHTML = kpis.map(k =>
+    `<div class="kpi-card ${k.c}">
+      <div class="kpi-lbl">${k.lbl}</div>
+      <div class="kpi-val ${k.vc||''}">${k.val}</div>
+      <div class="kpi-trend ${k.cls}">${k.trend}</div>
+    </div>`
+  ).join('');
+}
+
+function renderPipeline() {
+  const cols = ['#D4A017','#E8B830','#F5A623','#10B981','#3B82F6','#8B5CF6'];
+  document.getElementById('pipelineView').innerHTML = D[sede].pipeline.map((s,i) =>
+    `<div class="stage-row">
+      <div class="stage-lbl">${s.e}</div>
+      <div class="stage-wrap">
+        <div class="stage-bar" style="width:${s.p}%;background:${cols[i]}22;border-left:3px solid ${cols[i]};">
+          <span style="color:${cols[i]};font-weight:700">${s.p}%</span>
+        </div>
+      </div>
+      <div class="stage-n">${s.n}</div>
+      <div class="stage-v">${s.v}</div>
+    </div>`
+  ).join('');
+}
+
+function renderRisk() {
+  document.getElementById('riskView').innerHTML = RISK.map(r =>
+    `<div class="risk-row">
+      <span class="sem ${r.s}"></span>
+      <div style="flex:1">
+        <div style="font-size:8.5pt;font-weight:600;color:var(--white)">${r.n}</div>
+        <div style="font-size:7.5pt;color:var(--muted);margin-top:2px">${r.is}</div>
+      </div>
+      <div class="risk-action">Contactar →</div>
+    </div>`
+  ).join('');
+}
+
+function renderOps() {
+  const list = sede === 'todas' ? OPORTUNIDADES : OPORTUNIDADES.filter(o => o.sede === SEDES[sede]);
+  document.getElementById('totalOps').textContent = list.length + ' en pipeline';
+  const ec = {Contactados:'bb',Cotizados:'bo','En negociación':'by','OC confirmada':'bg','Cerrado ganado':'bg'};
+  document.querySelector('#tablaOps tbody').innerHTML = list.map(o => {
+    const hs = o.h >= 24 ? Math.floor(o.h/24)+'d '+(o.h%24)+'h' : o.h+'h';
+    return `<tr>
+      <td class="tb">${o.cl}</td>
+      <td><span class="badge bm">${o.sec}</span></td>
+      <td class="tb">${o.val}</td>
+      <td><span class="badge ${ec[o.et]||'bm'}">${o.et}</span></td>
+      <td><span class="badge ${o.h>24?'br':o.h>12?'by':'bm'}">${o.h>24?'⚠ ':''} ${hs}</span></td>
+      <td><span class="badge ${o.h>48?'br':o.h>24?'by':'bg'}">${o.h>48?'🔴 Estancada':o.h>24?'🟡 Seguimiento':'🟢 Activa'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderKpiPost() {
+  const d = [
+    {lbl:'⚠️ Abiertas',         val:'8',     tr:'↓ 2 críticas', cl:'dn', c:'c-red', vc:'v-red'},
+    {lbl:'⏱ Tiempo resolución', val:'28.4h', tr:'↓ Meta: <24h', cl:'dn', c:'c-yellow', vc:'v-yellow'},
+    {lbl:'🔴 Clientes en riesgo',val:'4',     tr:'↓ Acción urgente', cl:'dn', c:'c-red', vc:'v-red'},
+    {lbl:'😊 Satisfacción est.', val:'4.1/5', tr:'↑ +0.2 vs mes ant.', cl:'up', c:'c-green'},
+  ];
+  document.getElementById('kpiPost').innerHTML = d.map(k =>
+    `<div class="kpi-card ${k.c}">
+      <div class="kpi-lbl">${k.lbl}</div>
+      <div class="kpi-val ${k.vc||''}">${k.val}</div>
+      <div class="kpi-trend ${k.cl}">${k.tr}</div>
+    </div>`
+  ).join('');
+}
+
+function renderInc() {
+  const list = sede === 'todas' ? INCIDENCIAS : INCIDENCIAS.filter(i => i.sede === SEDES[sede]);
+  document.getElementById('incBadge').textContent = list.length + ' abiertas';
+  const pc = {Alta:'br',Media:'by',Baja:'bm'};
+  document.querySelector('#tablaInc tbody').innerHTML = list.map(i => {
+    const hs = i.h >= 24 ? Math.floor(i.h/24)+'d '+(i.h%24)+'h' : i.h+'h';
+    return `<tr>
+      <td>
+        <span class="tb">${i.cl}</span>
+        ${i.crit ? '<span class="badge br" style="margin-left:6px">🔴 CRÍTICO</span>' : ''}
+      </td>
+      <td>${i.tp}</td>
+      <td class="tm">${i.sede}</td>
+      <td class="tm">${i.fStr}</td>
+      <td><span class="badge ${i.h>48?'br':i.h>24?'by':'bm'}">${hs}</span></td>
+      <td><span class="badge ${pc[i.pr]}">${i.pr}</span></td>
+      <td><span class="badge bm">${i.st}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderClientes() {
+  const sl = {sg:`<span class="sem sg"></span> Estable`, sy:`<span class="sem sy"></span> Seguimiento`, sr:`<span class="sem sr"></span> Riesgo`};
+  document.querySelector('#tablaClientes tbody').innerHTML = TOP_CLIENTES.map((c,i) =>
+    `<tr>
+      <td class="tm">${i+1}</td>
+      <td class="tb">${c.cl}</td>
+      <td><span class="badge bm">${c.sec}</span></td>
+      <td class="tm">${c.sede}</td>
+      <td class="tb">${c.cm}</td>
+      <td>${c.tk}</td>
+      <td><span class="badge bb">${c.fr}</span></td>
+      <td>${sl[c.s]}</td>
+    </tr>`
+  ).join('');
+}
+
+function renderKpiOp() {
+  const d = [
+    {lbl:'⏱ Tiempo cotización',    val:'4.2h',  tr:'↓ Meta: <2h · +110%', cl:'dn', c:'c-red', vc:'v-red'},
+    {lbl:'🤖 Tareas automatizadas', val:'67%',   tr:'↑ +12pp mes a mes',   cl:'up', c:'c-green'},
+    {lbl:'📋 Cotizaciones sin enviar',val:'7',   tr:'↓ Con demora >2h',    cl:'dn', c:'c-yellow', vc:'v-yellow'},
+    {lbl:'⚙️ Eficiencia operativa', val:'71%',   tr:'↓ Meta: 85%',         cl:'dn', c:'c-yellow'},
+  ];
+  document.getElementById('kpiOp').innerHTML = d.map(k =>
+    `<div class="kpi-card ${k.c}">
+      <div class="kpi-lbl">${k.lbl}</div>
+      <div class="kpi-val ${k.vc||''}">${k.val}</div>
+      <div class="kpi-trend ${k.cl}">${k.tr}</div>
+    </div>`
+  ).join('');
+}
+
+function renderAsesores() {
+  document.getElementById('asesoresWrap').innerHTML = ASESORES.map(a =>
+    `<div class="asesor-row">
+      <div class="av">${a.i}</div>
+      <div style="flex:1">
+        <div style="font-size:8pt;font-weight:500;color:var(--text);margin-bottom:5px">${a.n} <span style="font-size:7.5pt;color:var(--muted)">${a.c===a.mx?'— Capacidad máxima':''}</span></div>
+        <div class="asesor-bar-bg"><div class="asesor-bar-fill" style="width:${(a.c/a.mx)*100}%;background:${a.col}"></div></div>
+      </div>
+      <div class="asesor-pct" style="color:${a.col}">${a.c}/${a.mx}</div>
+    </div>`
+  ).join('');
+}
+
+function renderBottlenecks() {
+  const ic = {Crítico:'br',Alto:'by',Medio:'bb'};
+  document.querySelector('#tablaBot tbody').innerHTML = BOTTLENECKS.map(b =>
+    `<tr>
+      <td class="tb">${b.p}</td>
+      <td style="color:var(--red);font-weight:700">${b.ac}</td>
+      <td class="tm">${b.mt}</td>
+      <td><span class="badge br">${b.dv}</span></td>
+      <td><span class="badge ${ic[b.imp]}">${b.imp}</span></td>
+      <td style="font-size:8pt;color:var(--gold)">→ ${b.rec}</td>
+    </tr>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════
+function initCharts(t) {
+  const d = D[sede];
+  if (t === 'overview') {
+    mk('chartIngresos',{
+      type:'line',
+      data:{
+        labels:MONTHS,
+        datasets:[{
+          data:d.meses,borderColor:'#D4A017',backgroundColor:'rgba(212,160,23,0.08)',
+          borderWidth:2,pointRadius:3,pointBackgroundColor:'#D4A017',tension:.4,fill:true
+        }]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.raw+'M'}}},
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,0.04)'}},
+          y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{callback:v=>'$'+v+'M'}}
+        }
+      }
+    });
+    mk('chartCanales',{
+      type:'doughnut',
+      data:{
+        labels:Object.keys(d.canales),
+        datasets:[{data:Object.values(d.canales),backgroundColor:['#D4A017','#3B82F6','#10B981','#8B5CF6'],borderColor:'#161616',borderWidth:3,hoverOffset:6}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+        plugins:{legend:{position:'right',labels:{font:{size:9},padding:10}},tooltip:{callbacks:{label:c=>c.label+': '+c.raw+'%'}}}
+      }
+    });
+  }
+  if (t === 'ventas') {
+    mk('chartFunnel',{
+      type:'bar',
+      data:{
+        labels:d.pipeline.map(p=>p.e),
+        datasets:[{data:d.pipeline.map(p=>p.n),backgroundColor:['#D4A017bb','#E8B830bb','#F5A623bb','#10B981bb','#3B82F6bb','#8B5CF6bb'],borderRadius:5}]
+      },
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{color:'rgba(255,255,255,0.04)'}},y:{grid:{display:false}}}
+      }
+    });
+    const sv = Object.entries(d.sedesV).filter(([,v])=>v>0);
+    mk('chartSedes',{
+      type:'bar',
+      data:{
+        labels:sv.map(([k])=>k),
+        datasets:[{data:sv.map(([,v])=>v),backgroundColor:'rgba(212,160,23,0.6)',borderColor:'#D4A017',borderWidth:1,borderRadius:5}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{callback:v=>'$'+v+'M'}}}
+      }
+    });
+  }
+  if (t === 'postventa') {
+    mk('chartIncTipo',{
+      type:'doughnut',
+      data:{
+        labels:['Garantía EPP','Entrega','Defecto fabricación','Consulta técnica','Reposición'],
+        datasets:[{data:[28,22,18,24,8],backgroundColor:['#EF4444aa','#F59E0Baa','#D4A017aa','#3B82F6aa','#10B981aa'],borderColor:'#161616',borderWidth:3,hoverOffset:5}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
+        plugins:{legend:{position:'right',labels:{font:{size:9},padding:8}}}
+      }
+    });
+    mk('chartIncSede',{
+      type:'bar',
+      data:{
+        labels:['Bogotá','Medellín','Cali','Barranquilla','Bucaramanga'],
+        datasets:[
+          {label:'Abiertas',   data:[3,2,2,1,0],backgroundColor:'rgba(239,68,68,0.65)',borderRadius:4},
+          {label:'Resueltas',  data:[12,8,5,4,3],backgroundColor:'rgba(16,185,129,0.4)',borderRadius:4},
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'top',labels:{font:{size:9}}}},
+        scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(255,255,255,0.04)'}}}
+      }
+    });
+  }
+  if (t === 'data') {
+    mk('chartProd',{
+      type:'bar',
+      data:{
+        labels:['Arnés Steelpro PRO-3','Botas Golden Miner','Casco Steelpro Tipo II','Kit Alturas Completo','Respirador 3M 6500','Overol Ignífugo','Lámpara Minera'],
+        datasets:[{data:[342,289,445,156,512,198,67],backgroundColor:'rgba(59,130,246,0.65)',borderColor:'#3B82F6',borderWidth:1,borderRadius:4}]
+      },
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{color:'rgba(255,255,255,0.04)'}},y:{grid:{display:false},ticks:{font:{size:8}}}}
+      }
+    });
+    mk('chartCat',{
+      type:'doughnut',
+      data:{
+        labels:['EPP','Alturas','Minería','Dotaciones','Ferretería','Primeros aux.'],
+        datasets:[{data:[34,26,21,10,6,3],backgroundColor:['#D4A017aa','#3B82F6aa','#10B981aa','#8B5CF6aa','#F59E0Baa','#EF4444aa'],borderColor:'#161616',borderWidth:3,hoverOffset:5}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
+        plugins:{legend:{position:'right',labels:{font:{size:9},padding:7}}}
+      }
+    });
+    mk('chartCanalComp',{
+      type:'bar',
+      data:{
+        labels:['WhatsApp','Web','Presencial','Email'],
+        datasets:[
+          {label:'Mes actual',   data:[54,21,18,7], backgroundColor:'rgba(212,160,23,0.7)',borderRadius:4},
+          {label:'Mes anterior', data:[48,24,21,7], backgroundColor:'rgba(212,160,23,0.2)',borderRadius:4},
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'top',labels:{font:{size:9}}}},
+        scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{callback:v=>v+'%'}}}
+      }
+    });
+  }
+  if (t === 'operacion') {
+    mk('chartAuto',{
+      type:'doughnut',
+      data:{
+        labels:['IA automatizó','Requirió humano'],
+        datasets:[{data:[67,33],backgroundColor:['rgba(16,185,129,0.75)','rgba(255,255,255,0.06)'],borderColor:['#10B981','#242424'],borderWidth:2,hoverOffset:4}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,cutout:'70%',
+        plugins:{legend:{position:'bottom',labels:{font:{size:9},padding:12}}}
+      }
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════
+function switchTab(t) {
+  tab = t;
+  document.querySelectorAll('.tab-sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    if(b.getAttribute('onclick').includes("'"+t+"'")) b.classList.add('active');
+  });
+  setTimeout(()=>initCharts(t), 60);
+}
+
+function changeSede(v) {
+  sede = v;
+  renderAll();
+}
+
+function renderAll() {
+  renderDate();
+  renderAlerts();
+  renderKPIs();
+  renderPipeline();
+  renderRisk();
+  renderOps();
+  renderKpiPost();
+  renderInc();
+  renderClientes();
+  renderKpiOp();
+  renderAsesores();
+  renderBottlenecks();
+  setTimeout(()=>{ initCharts('overview'); initCharts(tab); }, 80);
+}
+
+// ═══════════════════════════════════════════════
+// LIVE SIM
+// ═══════════════════════════════════════════════
+let cnt = 847;
+setInterval(()=>{
+  cnt += Math.floor(Math.random()*4+1);
+  const el = document.getElementById('aiCount');
+  if(el) el.textContent = cnt.toLocaleString('es-CO');
+  renderDate();
+}, 9000);
+
+document.addEventListener('DOMContentLoaded', renderAll);
+</script>
+</body>
+</html>
