@@ -180,18 +180,143 @@ select.sede-sel{
 /* ── LAST UPDATE ── */
 .upd-chip{display:inline-flex;align-items:center;gap:6px;font-size:7.5pt;color:var(--muted);background:var(--card);border:1px solid var(--border);padding:4px 10px;border-radius:6px;}
 
-/* ── RESPONSIVE ── */
-@media(max-width:1300px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
+/* ── TABLE SCROLL WRAPPER ── */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:0 0 8px 8px;}
+.tbl-wrap .tbl{min-width:520px;}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — TABLET 900-1300px
+══════════════════════════════════════ */
+@media(max-width:1300px){
+  .kpi-grid{grid-template-columns:repeat(3,1fr);}
+}
+@media(max-width:1000px){
+  .g21{grid-template-columns:1fr;}
+  .g3{grid-template-columns:1fr 1fr;}
+}
 @media(max-width:900px){
+  .topbar{padding:0 16px;}
+  .main{padding:16px;}
   .g2,.g3,.g21{grid-template-columns:1fr;}
   .kpi-grid{grid-template-columns:repeat(2,1fr);}
-  .main{padding:14px;}
-  .topbar{padding:0 14px;}
+  .kpi4{grid-template-columns:repeat(2,1fr)!important;}
+  .stage-v{display:none;}
 }
-@media(max-width:600px){
-  .kpi-grid{grid-template-columns:1fr 1fr;}
-  .brand-sub,.date-chip{display:none;}
-  .tab-btn{padding:5px 10px;font-size:8pt;}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — MOBILE ≤ 640px
+   Topbar: 2 filas (brand|status / tabs)
+   Contenido: cards apiladas, charts compactos
+══════════════════════════════════════ */
+@media(max-width:640px){
+  /* ── Topbar 2 filas ── */
+  .topbar{
+    height:auto;
+    flex-wrap:wrap;
+    padding:0 14px;
+    gap:0;
+  }
+  .topbar-brand{
+    height:48px;
+    flex:1;
+    min-width:0;
+  }
+  .topbar-right{
+    height:48px;
+    margin-left:0;
+    gap:8px;
+  }
+  .date-chip{display:none;}
+  .brand-sub{display:none;}
+
+  /* Tabs: segunda fila, full width, scrollable */
+  .tab-nav{
+    order:10;
+    width:100%;
+    padding:5px 0 10px;
+    border-top:1px solid var(--border);
+    gap:3px;
+    -ms-overflow-style:none;
+    scrollbar-width:none;
+  }
+  .tab-btn{
+    padding:8px 13px;
+    font-size:8pt;
+    border-radius:8px;
+    flex:0 0 auto;
+    min-height:36px;
+  }
+  .tab-btn.active{
+    background:rgba(212,160,23,.15);
+    border:1px solid rgba(212,160,23,.3);
+  }
+
+  /* ── Layout ── */
+  .main{padding:12px;}
+  .mb-6{margin-bottom:14px;}
+  .mb-4{margin-bottom:12px;}
+  .mt-4{margin-top:12px;}
+  .card{padding:14px 12px;border-radius:10px;}
+
+  /* ── KPIs ── */
+  .kpi-grid,.kpi4{grid-template-columns:1fr 1fr!important;gap:8px;}
+  .kpi-card{padding:14px 12px;}
+  .kpi-lbl{font-size:7pt;margin-bottom:6px;}
+  .kpi-val{font-size:17pt;}
+  .kpi-trend{font-size:7pt;}
+
+  /* ── Alerts strip ── */
+  .alerts-strip{flex-direction:column;padding:12px 14px;gap:8px;margin-bottom:14px;}
+  .al-icon{display:none;}
+  .al-side{display:none;}
+  .al-list{flex-direction:column;gap:5px;}
+  .al-item{font-size:7.5pt;padding:7px 10px;}
+
+  /* ── Charts ── */
+  .cw{height:185px;}
+  .cw-sm{height:155px;}
+  .cw-lg{height:230px;}
+  .chart-title{font-size:9pt;}
+  .chart-sub{font-size:7pt;margin-bottom:10px;}
+
+  /* ── Pipeline stages ── */
+  .stage-row{gap:7px;}
+  .stage-lbl{width:80px;font-size:7pt;}
+  .stage-v{display:none;}
+  .stage-n{width:20px;font-size:7.5pt;}
+  .stage-bar{font-size:7pt;}
+
+  /* ── Tables: scroll horizontal ── */
+  .tbl-wrap .tbl{min-width:480px;}
+  .tbl th{padding:7px 10px;font-size:6.5pt;}
+  .tbl td{padding:9px 10px;font-size:8pt;}
+
+  /* ── Flex-between: wrap si no cabe ── */
+  .flex-between{flex-wrap:wrap;gap:8px;}
+
+  /* ── Asesor rows ── */
+  .av{width:28px;height:28px;font-size:8pt;}
+
+  /* ── Section labels ── */
+  .section-lbl{font-size:6.5pt;}
+
+  /* ── Prevent iOS auto-zoom en selects ── */
+  select.sede-sel{font-size:16px!important;}
+
+  /* ── Risk rows ── */
+  .risk-action{padding:5px 10px;min-height:36px;display:flex;align-items:center;}
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — MÓVIL PEQUEÑO ≤ 380px
+══════════════════════════════════════ */
+@media(max-width:380px){
+  .kpi-grid,.kpi4{grid-template-columns:1fr!important;}
+  .kpi-val{font-size:20pt;}
+  .status-pill span:last-child{display:none;}
+  .logo-box{width:28px;height:28px;font-size:11pt;}
+  .brand-name{font-size:9.5pt;}
+  .tab-btn{padding:7px 10px;font-size:7.5pt;}
 }
 </style>
 </head>
@@ -298,10 +423,12 @@ select.sede-sel{
       <div><div class="chart-title">Oportunidades activas</div><div class="chart-sub">Rojo si sin respuesta >24h · Ordenadas por criticidad</div></div>
       <div class="badge bo" id="totalOps">34 en pipeline</div>
     </div>
+    <div class="tbl-wrap">
     <table class="tbl" id="tablaOps">
       <thead><tr><th>Cliente</th><th>Sector</th><th>Valor estimado</th><th>Etapa</th><th>Sin respuesta</th><th>Estado</th></tr></thead>
       <tbody></tbody>
     </table>
+    </div>
   </div>
 </div>
 
@@ -325,10 +452,12 @@ select.sede-sel{
       <div><div class="chart-title">Tablero de incidencias activas</div><div class="chart-sub">Ordenadas por criticidad · Semáforo de riesgo</div></div>
       <div class="badge br" id="incBadge">8 abiertas</div>
     </div>
+    <div class="tbl-wrap">
     <table class="tbl" id="tablaInc">
       <thead><tr><th>Cliente</th><th>Tipo</th><th>Sede</th><th>Apertura</th><th>Tiempo abierta</th><th>Prioridad</th><th>Estado</th></tr></thead>
       <tbody></tbody>
     </table>
+    </div>
   </div>
 </div>
 
@@ -356,10 +485,12 @@ select.sede-sel{
       <div><div class="chart-title">Top clientes por valor</div><div class="chart-sub">Acumulado mes · Semáforo de fidelidad</div></div>
       <div class="badge bg">Actualizado hoy</div>
     </div>
+    <div class="tbl-wrap">
     <table class="tbl" id="tablaClientes">
       <thead><tr><th>#</th><th>Cliente</th><th>Sector</th><th>Sede</th><th>Compras mes</th><th>Ticket prom.</th><th>Frecuencia</th><th>Estado</th></tr></thead>
       <tbody></tbody>
     </table>
+    </div>
   </div>
 </div>
 
@@ -385,10 +516,12 @@ select.sede-sel{
   </div>
   <div class="card">
     <div class="chart-title mb-4">Cuellos de botella detectados por IA</div>
+    <div class="tbl-wrap">
     <table class="tbl" id="tablaBot">
       <thead><tr><th>Proceso</th><th>Actual</th><th>Meta</th><th>Desviación</th><th>Impacto</th><th>Recomendación IA</th></tr></thead>
       <tbody></tbody>
     </table>
+    </div>
   </div>
 </div>
 
