@@ -228,10 +228,14 @@ select.sede-sel{
   }
   .date-chip{display:none;}
   .brand-sub{display:none;}
+  /* Solo mostrar el punto verde, ocultar texto "Sistema activo" */
+  .status-pill{padding:5px 8px;gap:0;}
+  .status-pill span{display:none;}
 
   /* Tabs: segunda fila, full width, scrollable */
   .tab-nav{
     order:10;
+    flex:0 0 100%;       /* override flex:1 — fuerza wrap a segunda fila */
     width:100%;
     padding:5px 0 10px;
     border-top:1px solid var(--border);
